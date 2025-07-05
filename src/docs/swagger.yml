@@ -1,0 +1,1446 @@
+openapi: 3.0.0
+info:
+  title: UnaHur Anti-Social Con MongoDb
+  description: Documentación para la red UnaHur Anti-Social
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64a8f0c9c3a2b5d6e4f12345"
+        userName:
+          type: string
+          example: "pepita"
+        email:
+          type: string
+          example: "pepita@example.com"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-06-18T20:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-06-18T21:00:00Z"
+
+    Post:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60c72b2f9b1d8e3a5c8d5678"
+        description:
+          type: string
+          example: "Descripción del post"
+        userId:
+          type: object
+          properties:
+            _id:
+              type: string
+              example: "60c72b2f9b1d8e3a5c8d1234"
+            userName:
+              type: string
+              example: "usuario123"
+            email:
+              type: string
+              example: "usuario@ejemplo.com"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostImage"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+      required:
+        - description
+        - userId
+
+    Tag:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60c72b2f9b1d8e3a5c8d4321"
+        name:
+          type: string
+          example: "nuevo"
+
+    PostImage:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "6650fbd6e5c4f2b3c24c2d11"
+        postId:
+          type: string
+          description: ID del post al que pertenece la imagen
+          example: "664fe8cbfdf8bc730ff2537e"
+        imageUrl:
+          type: array
+          items:
+            type: string
+          example: ["uploads/imagen1.jpg", "uploads/imagen2.jpg"]
+
+    Comment:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60c72b2f9b1d8e3a5c8d9876"
+        postId:
+          type: string
+          example: "60c72b2f9b1d8e3a5c8d2222"
+        userId:
+          type: object
+          properties:
+            _id:
+              type: string
+              example: "60c72b2f9b1d8e3a5c8d1234"
+            userName:
+              type: string
+              example: "usuario123"
+        text:
+          type: string
+          example: "Este es un comentario"
+
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-06-01T12:34:56.789Z"
+
+    Follow:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "684f283e8354d0b09c12ffc7"
+        followerId:
+          type: string
+          example: "684e0974c2aaaed45f3014a0"
+        followedId:
+          type: string
+          example: "64a8f0c9c3a2b5d6e4f12345"
+
+    FollowCreate:
+      type: object
+      properties:
+        followerId:
+          type: string
+          example: "684e0974c2aaaed45f3014a0"
+        followedId:
+          type: string
+          example: "64a8f0c9c3a2b5d6e4f12345"
+      required:
+        - followerId
+        - followedId
+
+    Follow-following:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "684e0974c2aaaed45f3014a0"
+        userName:
+          type: string
+          example: "noname"
+        followed:
+          type: array
+          example:
+            [
+              {
+                "followedId":
+                  {
+                    "_id": "64a8f0c9c3a2b5d6e4f12345",
+                    "userName": "pepita",
+                    "id": "64a8f0c9c3a2b5d6e4f12345",
+                  },
+              },
+            ]
+
+    Follow-followers:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "64a8f0c9c3a2b5d6e4f12345"
+        userName:
+          type: string
+          example: "pepita"
+        follower:
+          type: array
+          example:
+            [
+              {
+                "followerId":
+                  {
+                    "_id": "684e0974c2aaaed45f3014a0",
+                    "userName": "noname",
+                    "id": "684e0974c2aaaed45f3014a0",
+                  },
+              },
+            ]
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Descripción del error"
+
+    ErrorServer:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error inesperado en el servidor"
+
+paths:
+  /users:
+    get:
+      summary: Obtener todos los usuarios
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    post:
+      summary: Crear un nuevo usuario
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: Usuario creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: El userName ya está en uso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Este userName ya está siendo utilizado"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /users/{id}:
+    get:
+      summary: Obtener usuario por ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    put:
+      summary: Actualizar usuario por ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Usuario actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    delete:
+      summary: Eliminar usuario por ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Usuario eliminado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+  /posts:
+    get:
+      summary: Obtener todos los posts
+      tags:
+        - Posts
+      responses:
+        "200":
+          description: Lista de posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    post:
+      summary: Crear un post nuevo
+      tags:
+        - Posts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  example: "Este es un post de prueba"
+                userId:
+                  type: string
+                  example: "60c72b2f9b1d8e3a5c8d1234"
+                tags:
+                  type: string
+                  description: Tags
+                  example: "tag1, tag2"
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Imágenes a subir
+              required:
+                - description
+                - userId
+      responses:
+        "201":
+          description: Post creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Faltan datos o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /posts/{id}:
+    get:
+      summary: Obtener un post por ID (sin imágenes, tags ni comentarios)
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Post no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    put:
+      summary: Actualizar un post por ID (reemplaza description y userId, puede actualizar imágenes)
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post a actualizar
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  example: "Texto actualizado"
+                userId:
+                  type: string
+                  example: "60c72b2f9b1d8e3a5c8d1234"
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Nuevas imágenes que reemplazan las anteriores
+              required:
+                - description
+                - userId
+      responses:
+        "200":
+          description: Post actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: ID inválido o datos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Post no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    delete:
+      summary: Eliminar un post por ID (incluye borrar comentarios e imágenes)
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post a eliminar
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post eliminado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post eliminado correctamente"
+                  post:
+                    $ref: "#/components/schemas/Post"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Post no existente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /posts/addTags/{id}:
+    patch:
+      summary: Agregar tags a un post existente
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["tag1", "tag2"]
+      responses:
+        "200":
+          description: Tags agregados correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Tags agregados"
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                      example: "60c72b2f9b1d8e3a5c8d4321"
+        "400":
+          description: Error en la petición (falta array tags)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Post no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /posts/{id}/images:
+    put:
+      summary: Actualizar las imágenes de un post (reemplaza imágenes actuales)
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Nuevas imágenes para subir
+              required:
+                - images
+      responses:
+        "201":
+          description: Imágenes actualizadas correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Imagenes actualizadas correctamente"
+        "400":
+          description: ID inválido o falta imágenes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /posts/{id}/{imageId}:
+    delete:
+      summary: Eliminar una imagen específica de un post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post
+          schema:
+            type: string
+        - name: imageId
+          in: path
+          required: true
+          description: ID de la imagen a eliminar
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Imagen eliminada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Imagen eliminada correctamente"
+                  post:
+                    $ref: "#/components/schemas/Post"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Imagen no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /posts/full/{id}:
+    get:
+      summary: Obtener post con imágenes, tags y comentarios poblados
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post completo con relaciones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /comments:
+    get:
+      summary: Obtener todos los comentarios
+      tags:
+        - Comments
+      responses:
+        "200":
+          description: Lista de comentarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    post:
+      summary: Crear un nuevo comentario
+      tags:
+        - Comments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  example: "60c72b2f9b1d8e3a5c8d1234"
+                userId:
+                  type: string
+                  example: "60c72b2f9b1d8e3a5c8d5678"
+                text:
+                  type: string
+                  example: "Este es un comentario de prueba"
+                createdAt:
+                  type: string
+                  format: date-time
+                  example: "2024-06-01T15:30:00Z"
+              required:
+                - postId
+                - userId
+                - text
+      responses:
+        "201":
+          description: Comentario creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "400":
+          description: Datos inválidos o faltantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /comments/{id}:
+    get:
+      summary: Obtener un comentario por su ID
+      tags:
+        - Comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comentario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Comentario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    put:
+      summary: Actualizar un comentario por ID
+      tags:
+        - Comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  example: "Comentario editado"
+
+      responses:
+        "200":
+          description: Comentario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "404":
+          description: Comentario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    delete:
+      summary: Eliminar un comentario por ID
+      tags:
+        - Comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comentario eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comentario eliminado"
+                  comment:
+                    $ref: "#/components/schemas/Comment"
+        "404":
+          description: Comentario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /comments/posts/{id}:
+    get:
+      summary: Obtener comentarios de un post específico
+      tags:
+        - Comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del post
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comentarios del post encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+        "400":
+          description: ID de post inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+  /tags:
+    get:
+      summary: Obtener todos los tags
+      tags:
+        - Tag
+      responses:
+        "200":
+          description: Lista de tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+    post:
+      summary: Crear un tag nuevo
+      tags:
+        - Tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "nuevo"
+      responses:
+        "201":
+          description: Tag creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: Error de validación o datos incorrectos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflicto, recurso ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+  /tags/{id}:
+    put:
+      summary: Actualizar un tag por ID
+      tags:
+        - Tag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "60c72b2f9b1d8e3a5c8d9876"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "actualizado"
+      responses:
+        "200":
+          description: Tag actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "400":
+          description: Error de validación o datos incorrectos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tag no encontrado o ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+    delete:
+      summary: Eliminar un tag por ID (y quitar referencias en posts)
+      tags:
+        - Tag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "60c72b2f9b1d8e3a5c8d9876"
+      responses:
+        "200":
+          description: Tag y referencias eliminadas correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "404":
+          description: Tag no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+  /postimages:
+    get:
+      summary: Obtener todas las imágenes
+      tags:
+        - PostImages
+      responses:
+        "200":
+          description: Lista de imágenes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostImage"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+    post:
+      summary: Crear nuevas imágenes para un post
+      tags:
+        - PostImages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  example: "664fe8cbfdf8bc730ff2537e"
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "201":
+          description: Imágenes creadas y post actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+        "400":
+          description: ID inválido o datos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: Post no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+  /postimages/{id}:
+    put:
+      summary: Actualizar imagen de un post
+      tags:
+        - PostImages
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la imagen a actualizar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Imagen actualizada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Imagen actualizada correctamente"
+        "400":
+          description: ID inválido o datos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+  /postimages/{postId}/{id}:
+    delete:
+      summary: Eliminar una imagen por ID
+      tags:
+        - PostImages
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID del post que contiene la imagen
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la imagen a eliminar
+      responses:
+        "200":
+          description: Imagen eliminada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Imagen eliminada correctamente"
+                  post:
+                    $ref: "#/components/schemas/Post"
+        "400":
+          description: ID inválido o datos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /follows/followers/{id}:
+    get:
+      summary: Obtener todos los seguidores de un usuario
+      tags:
+        - Follow
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID del usuario a obtener los seguidores
+
+      responses:
+        "200":
+          description: Usuario con su listado de seguidores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Follow-followers"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: Usuario inexistente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /follows/following/{id}:
+    get:
+      summary: Obtener todos los usuarios seguidos por el usuario
+      tags:
+        - Follow
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID del usuario a obtener los seguidos
+
+      responses:
+        "200":
+          description: Usuario con su listado de seguidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Follow-following"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: Usuario inexistente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /follows:
+    post:
+      summary: Crear la relación entre seguidor y seguido
+      tags:
+        - Follow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowCreate"
+      responses:
+        "201":
+          description: Ninguna
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Follow"
+        "400":
+          description: Datos Erróneos, no puede seguirse a si mismo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: Usuario inexistente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
+
+  /follows/{follower}/{followed}:
+    delete:
+      summary: Eliminar la relación entre seguidor y seguido
+      tags:
+        - Follow
+      parameters:
+        - in: path
+          name: follower
+          required: true
+          schema:
+            type: string
+          description: ID del usuario seguidor
+        - in: path
+          name: followed
+          required: true
+          schema:
+            type: string
+          description: ID del usuario seguido
+
+      responses:
+        "200":
+          description: Se dejó de seguir al usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Follow"
+
+        "404":
+          description: Solicitud Incorrecta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorServer"
