@@ -16,7 +16,6 @@ const {
   postRoute,
   tagRoute,
   postImageRoute,
-  followRoute,
   commentRoute,
 } = require("./routes");
 
@@ -28,7 +27,6 @@ app.use("/users", userRoute);
 app.use("/posts", postRoute);
 app.use("/tags", tagRoute);
 app.use("/postimages", postImageRoute);
-app.use("/follows", followRoute);
 app.use("/comments", commentRoute);
 
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDoc));

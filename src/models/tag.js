@@ -15,7 +15,7 @@ const tagSchema = new mongoose.Schema({
 tagSchema.virtual("posts", {
   ref: "Post", //nombre de la collection
   localField: "_id", // id de tag
-  foreignField: "tags", //nombre del campo en Post
+  foreignField: "tags", //nombre del campo en product
   justOne: false,
 });
 tagSchema.set("toJSON", { virtuals: true });

@@ -1,9 +1,13 @@
 const Post = require("../models/post");
 const Tag = require("../models/tag");
+const redisClient = require("../redis")
 
 const getTags = async (req, res) => {
   try {
     const tags = await Tag.find().populate("posts", "description userId");
+    const cacheKey = `Tags`
+
+    await redisClient.set(cacheKey, JSON.stringify(tags), {EX: 300})
     res.status(200).json(tags);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -19,11 +23,12 @@ const createTag = async (req, res) => {
         .json({ message: "El nombre del tag es requerido" });
     }
     const existingTag = await Tag.findOne({ name });
-    //en model definimos el tag como unique
+    
     if (existingTag) {
       return res.status(409).json({ message: "Tag existente" });
     }
     const newTag = await Tag.create({ name });
+
     res.status(201).json(newTag);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -34,6 +39,7 @@ const updateTag = async (req, res) => {
   try {
     const id = req.params.id;
     const { name } = req.body;
+    const cacheKey = `Tag-${id}`
 
     if (!name) {
       return res
@@ -52,7 +58,8 @@ const updateTag = async (req, res) => {
         .status(404)
         .json({ message: "Tag no encontrado o ID inválido" });
     }
-
+    
+    await redisClient.set(cacheKey, JSON.stringify(updatedTag), { EX: 300 });
     res.status(200).json(updatedTag);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -71,7 +78,6 @@ const deleteById = async (req, res) => {
         .json({ message: "Tag no encontrado o ID inválido" });
     }
 
-    // para quitar la referencia del tag en el array de tags en post - $pull
     await Post.updateMany({ tags: id }, { $pull: { tags: id } });
 
     res

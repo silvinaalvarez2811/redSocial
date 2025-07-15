@@ -1,10 +1,14 @@
 const PostImage = require("../models/postImage");
 const Post = require("../models/post");
 const { saveImage, deleteImage } = require("../aditionalFunctions/image");
+const redisClient = require("../redis")
 
 const getAllPostImages = async (req, res) => {
   try {
     const images = await PostImage.find({}).select("-__v");
+    const cacheKey = `PostImages`
+
+    await redisClient.set(cacheKey, JSON.stringify(images), {EX: 300})
     res.status(200).json(images);
   } catch (e) {
     res
@@ -12,6 +16,24 @@ const getAllPostImages = async (req, res) => {
       .json({ message: "Ocurrió un error en el servidor", error: e.message });
   }
 };
+
+const getImagesByPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const images = await Post.findById(postId)
+      .select("images")
+      .populate("images", "imageUrl");
+    const cacheKey = `Images-post-${postId}`
+
+    await redisClient.set(cacheKey, JSON.stringify(images), {EX: 300})
+    res.status(200).json(images);
+  } catch (e) {
+    res
+      .status(500)
+      .json({ message: "Ocurrió un error en el servidor", error: e.message });
+  }
+};
+
 
 const createPostImages = async (req, res) => {
   try {
@@ -43,7 +65,7 @@ const createPostImages = async (req, res) => {
 const updatePostImage = async (req, res) => {
   try {
     const { id } = req.params;
-
+    const cacheKey = `PostImage-${id}`
     const image = await PostImage.findById(id);
     // Borro la imagen anterior de la carpeta uploads, la paso a string porque el campo imageurl está guardado como array
     deleteImage(image.imageUrl.toString());
@@ -57,6 +79,8 @@ const updatePostImage = async (req, res) => {
     post.images.pull(id); // Quito la imagen anterior del array en post
     post.images.push(image._id); // Agrego la imagen nueva al array en post
     await post.save();
+
+    await redisClient.set(cacheKey, JSON.stringify(image), {EX: 1800})
     res
       .status(201)
       .json({ message: `Imagen actualizada correctamente` });
@@ -86,6 +110,7 @@ const deleteById = async (req, res) => {
 
 module.exports = {
   getAllPostImages,
+  getImagesByPost,
   createPostImages,
   updatePostImage,
   deleteById,

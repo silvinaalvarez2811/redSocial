@@ -25,24 +25,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Usuarios que siguen al usuario del localField
-userSchema.virtual("follower", {
-  ref: "Follow",
-  localField: "_id",
-  foreignField: "followedId",
-  justOne: false,
-});
-// Usuarios a los que el localField sigue
-userSchema.virtual("followed", {
-  ref: "Follow",
-  localField: "_id",
-  foreignField: "followerId",
-  justOne: false,
-});
-
-// Hacer que los virtuales se incluyan al convertir en JSON o en objeto
-userSchema.set("toJSON", { virtuals: true });
-userSchema.set("toObject", { virtuals: true });
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

@@ -4,11 +4,14 @@ const PostImage = require("../models/postImage");
 const Tag = require("../models/tag");
 const { saveImage } = require("../aditionalFunctions/image");
 const { obtenerFechaLimite } = require("../aditionalFunctions/comment");
+const redisClient = require("../redis")
 
 const getPosts = async (req, res) => {
   try {
     const posts = await Post.find().select("-__v");
+    const cacheKey = `Posts`
 
+    await redisClient.set(cacheKey, JSON.stringify(posts), {EX: 300})
     res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -18,13 +21,14 @@ const getPosts = async (req, res) => {
 const getPostById = async (req, res) => {
   try {
     const id = req.params.id;
-
+    const cacheKey = `Post-${id}`
     const post = await Post.findById(id);
 
     if (!post) {
       return res.status(404).json({ message: "Post inexistente" });
     }
 
+    await redisClient.set(cacheKey, JSON.stringify(post), {EX: 1800})
     res.status(200).json(post);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -35,6 +39,7 @@ const getPostwithImagesTagsCommentsById = async (req, res) => {
   try {
     const id = req.params.id;
     const fechaLimite = obtenerFechaLimite();
+    const cacheKey = `Post-all-${id}`
 
     const data = await Post.findById(id)
       .select("-__v")
@@ -48,6 +53,7 @@ const getPostwithImagesTagsCommentsById = async (req, res) => {
         populate: { path: "userId", select: "userName" },
       });
 
+    await redisClient.set(cacheKey, JSON.stringify(data), {EX: 300})
     res.status(200).json(data);
   } catch (e) {
     res
@@ -55,24 +61,22 @@ const getPostwithImagesTagsCommentsById = async (req, res) => {
       .json({ message: "Ocurrió un error en el servidor", error: e.message });
   }
 };
+
 const createPost = async (req, res) => {
   try {
-    const { description, userId, tags } = req.body;
+    const { description, userId, tags, lookingFor } = req.body;
 
-    if (!userId || !description) {
+    if (!userId || !description || !lookingFor) {
       return res.status(400).json({ message: "Faltan datos requeridos" });
     }
 
     // Crear el post inicialmente sin tags ni imágenes
-    const newPost = await Post.create({ description, userId });
+    const newPost = await Post.create({ description, userId, lookingFor });
 
     // Procesar tags: convertir string separado por coma en array limpio
     let tagArray = [];
-    if (tags && typeof tags === "string") {
-      tagArray = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0);
+    if(Array.isArray(tags)) {
+      tagArray = tags;
     }
 
     // Buscar o crear tags y guardar sus IDs
@@ -127,10 +131,11 @@ const createPost = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const id = req.params.id;
+    const cacheKey = `Post-${id}`
 
-    const { description, userId } = req.body;
+    const { description, userId, lookingFor } = req.body;
 
-    if (!description || !userId) {
+    if (!description || !userId || !lookingFor ) {
       return res.status(400).json({ message: "Faltan datos requeridos" });
     }
     const post = await Post.findById(id);
@@ -140,6 +145,7 @@ const updatePost = async (req, res) => {
 
     post.description = description;
     post.userId = userId;
+    post.lookingFor = lookingFor;
 
     await post.save();
 
@@ -168,6 +174,7 @@ const updatePost = async (req, res) => {
       .populate("userId", "userName")
       .lean();
 
+    await redisClient.set(cacheKey, JSON.stringify(post), {EX: 1800})
     res.status(200).json(postUpdated);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -178,6 +185,7 @@ const addTagsToPost = async (req, res) => {
   try {
     const postId = req.params.id;
     let { tags } = req.body;
+    const cacheKey = `Post-${postId}`
 
     if (!tags || !Array.isArray(tags)) {
       return res.status(400).json({ message: "Debes enviar un array de tags" });
@@ -210,7 +218,7 @@ const addTagsToPost = async (req, res) => {
       }
     });
     await post.save();
-
+    await redisClient.set(cacheKey, JSON.stringify(post), {EX: 1800})
     res.status(200).json({ message: "Tags agregados", tags: post.tags });
   } catch (error) {
     res
@@ -225,11 +233,12 @@ const deleteById = async (req, res) => {
 
     const post = await Post.findById(postId);
     if (!post) {
-      return res.status(404).json({ message: "Post no existente" });
+      return res.status(404).json({ message: "Post inexistente" });
     }
     await Comment.deleteMany({ postId });
     await PostImage.deleteMany({ postId });
     await Post.findByIdAndDelete(postId);
+
     res.status(200).json({ message: "Post eliminado correctamente", post });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -239,6 +248,7 @@ const deleteById = async (req, res) => {
 const deletePostImage = async (req, res) => {
   try {
     const { id, imageId } = req.params;
+    const cacheKey = `Post-${id}`
 
     const deletedImage = await PostImage.findOneAndDelete({
       postId: id,
@@ -251,6 +261,8 @@ const deletePostImage = async (req, res) => {
     post.images.pull(imageId);
     await post.save();
 
+    await redisClient.del(`PostImage-${imageId}`)
+    await redisClient.set(cacheKey, JSON.stringify(post))
     res.status(200).json({ message: "Imagen eliminada correctamente", post });
   } catch (e) {
     res
@@ -262,8 +274,9 @@ const deletePostImage = async (req, res) => {
 const updatePostImagesById = async (req, res) => {
   try {
     const { id } = req.params;
+    const cacheKey = `Post-${id}`
 
-    const postImages = await Post.findById(id).select("images");
+    const post = await Post.findById(id);
 
     req.files.map((file) => saveImage(file));
     const imagesRecords = req.files.map((file) => ({
@@ -275,10 +288,11 @@ const updatePostImagesById = async (req, res) => {
 
     const idImages = await PostImage.find({ postId: id }).select("_id");
     await Post.updateOne({ _id: id }, { $set: { images: idImages } });
-
+    
+    await redisClient.set(cacheKey, JSON.stringify(post))
     res
       .status(201)
-      .json({ message: `Imagenes actualizadas correctamente ${postImages}` });
+      .json({ message: `Imagenes actualizadas correctamente` });
   } catch (e) {
     res
       .status(500)

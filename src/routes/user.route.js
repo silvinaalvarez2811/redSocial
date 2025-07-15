@@ -5,12 +5,13 @@ const { validatorObjectId, cacheMiddleware } = require('../middlewares');
 
 // Probado - todo OK 
 router.get("/", 
+    cacheMiddleware.checkCacheAll("Users"),
     userController.getUsers
 );
 
 router.get("/:id", 
     validatorObjectId.validarObjectId, 
-    cacheMiddleware.checkCache,
+    cacheMiddleware.checkCache("User"),
     userController.getUserById
 );
 
@@ -25,7 +26,7 @@ router.put("/:id",
 
 router.delete("/:id", 
     validatorObjectId.validarObjectId, 
-    cacheMiddleware.deleteCache,
+    cacheMiddleware.deleteCache("User"),
     userController.deleteById
 );
 

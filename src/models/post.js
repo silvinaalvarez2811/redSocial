@@ -18,23 +18,36 @@ const postSchema = new mongoose.Schema(
         message: () => "El post debe contener una descripción",
       },
     },
+
+    lookingFor: {
+      type: String,
+      required: [true, "lookingFor es requerido"],
+       validate: {
+        validator: (t) => t.trim().length > 0,
+        message: () => "El post debe contener una descripción",
+      },
+    },
+
     tags: [
       {
         type: Schema.Types.ObjectId,
         ref: "Tag",
       },
     ],
+
     images: [
       {
         type: Schema.Types.ObjectId,
         ref: "PostImage",
       },
     ],
+
     createdAt: {
       type: Date,
       default: Date.now,
     },
   },
+
   {
     collection: "posts",
   }

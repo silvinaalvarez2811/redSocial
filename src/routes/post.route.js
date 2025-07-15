@@ -2,7 +2,7 @@ const { Router } = require("express");
 const { postController } = require("../controllers");
 const { fileFilter } = require("../aditionalFunctions/image");
 const multer = require("multer");
-const { validarObjectId, validarPostImageIds } = require('../middlewares/validatorObjectId');
+const { validatorObjectId, cacheMiddleware } = require('../middlewares');
 
 const router = Router();
 const upload = multer({
@@ -13,16 +13,21 @@ const upload = multer({
 
 //rutas get
 router.get("/full/:id", 
-  validarObjectId, 
+  validatorObjectId.validarObjectId, 
+  cacheMiddleware.checkCache("Post"),
   postController.getPostwithImagesTagsCommentsById
 );
 
 router.get("/:id", 
-  validarObjectId,
+  validatorObjectId.validarObjectId,
+  cacheMiddleware.checkCache("Post"),
   postController.getPostById
 );
 
-router.get("/", postController.getPosts);
+router.get("/", 
+  cacheMiddleware.checkCacheAll("Posts"),
+  postController.getPosts
+);
 
 //post
 router.post("/", 
@@ -33,30 +38,31 @@ router.post("/",
 //put
 router.put("/:id", 
   upload.array("images", 6), 
-  validarObjectId, 
+  validatorObjectId.validarObjectId, 
   postController.updatePost
 );
 
 router.put("/:id/images",
   upload.array("images", 6),
-  validarObjectId,
+  validatorObjectId.validarObjectId,
   postController.updatePostImagesById
 );
 
 //patch - agregar tags a post
 router.patch("/addTags/:id", 
-  validarObjectId,
+  validatorObjectId.validarObjectId,
   postController.addTagsToPost
 );
 
 //delete
 router.delete("/:id/:imageId", 
-  validarPostImageIds,
+  validatorObjectId.validarPostImageIds,
   postController.deletePostImage
 );
 
 router.delete("/:id", 
-  validarObjectId,
+  validatorObjectId.validarObjectId,
+  cacheMiddleware.deleteCache("Post"),
   postController.deleteById
 );
 

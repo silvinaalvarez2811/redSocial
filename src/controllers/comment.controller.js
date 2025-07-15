@@ -1,5 +1,6 @@
 const Comment = require("../models/comment");
 const { obtenerFechaLimite } = require("../aditionalFunctions/comment");
+const redisClient = require("../redis")
 
 const createComment = async (req, res) => {
   try {
@@ -13,6 +14,7 @@ const createComment = async (req, res) => {
     }
     const newComment = new Comment({ postId, userId, text, createdAt });
     await newComment.save();
+
     res.status(201).json(newComment);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -23,9 +25,11 @@ const createComment = async (req, res) => {
 const getComments = async (req, res) => {
   try {
     const fechaLimite = obtenerFechaLimite();
+    const cacheKey = `Comments`
     const comments = await Comment.find({
       createdAt: { $gte: fechaLimite },
     });
+    await redisClient.set(cacheKey, JSON.stringify(comments), {EX: 300})
     res.status(200).json(comments);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -36,6 +40,7 @@ const getComments = async (req, res) => {
 const getCommentById = async (req, res) => {
   try {
     const id = req.params.id;
+    const cacheKey = `Comment-${id}`
 
     const comment = await Comment.findById(id);
     if (!comment) {
@@ -44,6 +49,9 @@ const getCommentById = async (req, res) => {
     if (comment.userId) {
       await comment.populate("userId", "userName");
     }
+
+    await redisClient.set(cacheKey, JSON.stringify(comment), {EX: 1800})
+
     res.status(200).json(comment);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -54,6 +62,7 @@ const getCommentById = async (req, res) => {
 const getCommentsByPost = async (req, res) => {
   try {
     const postId = req.params.id;
+    const cacheKey = `Comment-postId-${id}` 
 
     const fechaLimite = obtenerFechaLimite();
 
@@ -64,6 +73,11 @@ const getCommentsByPost = async (req, res) => {
     }).sort({
       createdAt: -1,
     });
+
+    if(comments.length != 0) {
+      await redisClient.set(cacheKey, JSON.stringify(comments), { EX: 300 })
+    }
+
     res.status(200).json(comments);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -72,12 +86,18 @@ const getCommentsByPost = async (req, res) => {
 
 const updateComment = async (req, res) => {
   try {
+    
     const updated = await Comment.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     }); //new para que me devuelva actualizado
+    const cacheKey = `Comment-${updated.id}`
+
     if (!updated) {
       return res.status(404).json({ error: "Comentario no encontrado" });
     }
+
+    await redisClient.set(cacheKey, JSON.stringify(updated))
+
     res.status(200).json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

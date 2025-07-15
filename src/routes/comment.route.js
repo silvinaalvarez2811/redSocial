@@ -1,19 +1,22 @@
 const { Router } = require("express");
 const { commentController } = require("../controllers");
-const router = Router();
-const { validarObjectId } = require('../middlewares/validatorObjectId');
+const router = Router()
+const { validatorObjectId, cacheMiddleware } = require('../middlewares');
 
 router.get("/", 
+    cacheMiddleware.checkCacheAll("Comments"),
     commentController.getComments
 );
 
 router.get("/posts/:id", 
-    validarObjectId, 
+    validatorObjectId.validarObjectId, 
+    cacheMiddleware.checkCache("Comment"),
     commentController.getCommentsByPost
 );  
 
 router.get("/:id", 
-    validarObjectId, 
+    validatorObjectId.validarObjectId, 
+    cacheMiddleware.checkCache("Comment"),
     commentController.getCommentById
 );
 
@@ -22,12 +25,13 @@ router.post("/",
 );
 
 router.put("/:id", 
-    validarObjectId, 
+    validatorObjectId.validarObjectId, 
     commentController.updateComment
 );
 
 router.delete("/:id", 
-    validarObjectId, 
+    validatorObjectId.validarObjectId, 
+    cacheMiddleware.deleteCache("Comment"),
     commentController.deleteComment
 );
 

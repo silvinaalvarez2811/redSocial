@@ -1,19 +1,23 @@
 const { Router } = require("express");
 const { tagController } = require("../controllers");
 const router = Router();
-const { validarObjectId } = require('../middlewares/validatorObjectId');
+const { validatorObjectId, cacheMiddleware } = require('../middlewares');
 
-router.get("/", tagController.getTags);
+router.get("/", 
+    cacheMiddleware.checkCacheAll("Tags"),
+    tagController.getTags
+);
 
 router.post("/", tagController.createTag);
 
 router.put("/:id", 
-    validarObjectId,
+    validatorObjectId.validarObjectId,
     tagController.updateTag
 );
 
 router.delete("/:id", 
-    validarObjectId,
+    validatorObjectId.validarObjectId,
+    cacheMiddleware.deleteCache("Tag"),
     tagController.deleteById
 );
 
