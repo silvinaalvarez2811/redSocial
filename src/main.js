@@ -14,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 const {
   userRoute,
   postRoute,
-  tagRoute,
   postImageRoute,
   commentRoute,
 } = require("./routes");
@@ -25,7 +24,6 @@ app.use(express.json());
 
 app.use("/users", userRoute);
 app.use("/posts", postRoute);
-app.use("/tags", tagRoute);
 app.use("/postimages", postImageRoute);
 app.use("/comments", commentRoute);
 

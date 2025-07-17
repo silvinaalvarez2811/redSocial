@@ -15,7 +15,7 @@ const upload = multer({
 router.get("/full/:id", 
   validatorObjectId.validarObjectId, 
   cacheMiddleware.checkCache("Post"),
-  postController.getPostwithImagesTagsCommentsById
+  postController.getPostwithImagesCommentsById
 );
 
 router.get("/:id", 
@@ -46,12 +46,6 @@ router.put("/:id/images",
   upload.array("images", 6),
   validatorObjectId.validarObjectId,
   postController.updatePostImagesById
-);
-
-//patch - agregar tags a post
-router.patch("/addTags/:id", 
-  validatorObjectId.validarObjectId,
-  postController.addTagsToPost
 );
 
 //delete

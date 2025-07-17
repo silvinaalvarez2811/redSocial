@@ -54,10 +54,6 @@ components:
         lookingFor:
           type: string
           example: "Que ropa se busca para intercambiar"
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
         images:
           type: array
           items:
@@ -69,16 +65,6 @@ components:
       required:
         - description
         - userId
-
-    Tag:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "60c72b2f9b1d8e3a5c8d4321"
-        name:
-          type: string
-          example: "nuevo"
 
     PostImage:
       type: object
@@ -342,10 +328,6 @@ paths:
                 lookingFor:
                   type: string
                   example: "Que ropa se busca para intercambiar"
-                tags:
-                  type: string
-                  description: Tags
-                  example: "tag1, tag2"
                 images:
                   type: array
                   items:
@@ -378,7 +360,7 @@ paths:
 
   /posts/{id}:
     get:
-      summary: Obtener un post por ID (sin imágenes, tags ni comentarios)
+      summary: Obtener un post por ID (sin imágenes ni comentarios)
       tags:
         - Posts
       parameters:
@@ -516,65 +498,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorServer"
 
-  /posts/addTags/{id}:
-    patch:
-      summary: Agregar tags a un post existente
-      tags:
-        - Posts
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del post
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  example: ["tag1", "tag2"]
-      responses:
-        "200":
-          description: Tags agregados correctamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Tags agregados"
-                  tags:
-                    type: array
-                    items:
-                      type: string
-                      example: "60c72b2f9b1d8e3a5c8d4321"
-        "400":
-          description: Error en la petición (falta array tags)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Post no encontrado
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorServer"
-
   /posts/{id}/images:
     put:
       summary: Actualizar las imágenes de un post (reemplaza imágenes actuales)
@@ -678,7 +601,7 @@ paths:
 
   /posts/full/{id}:
     get:
-      summary: Obtener post con imágenes, tags y comentarios poblados
+      summary: Obtener post con imágenes y comentarios poblados
       tags:
         - Posts
       parameters:
@@ -924,148 +847,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorServer"
-  /tags:
-    get:
-      summary: Obtener todos los tags
-      tags:
-        - Tag
-      responses:
-        "200":
-          description: Lista de tags
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Tag"
-        "500":
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorServer"
-
-    post:
-      summary: Crear un tag nuevo
-      tags:
-        - Tag
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                  example: "nuevo"
-      responses:
-        "201":
-          description: Tag creado correctamente
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tag"
-        "400":
-          description: Error de validación o datos incorrectos
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Conflicto, recurso ya existe
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorServer"
-  /tags/{id}:
-    put:
-      summary: Actualizar un tag por ID
-      tags:
-        - Tag
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: "60c72b2f9b1d8e3a5c8d9876"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                  example: "actualizado"
-      responses:
-        "200":
-          description: Tag actualizado correctamente
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tag"
-        "400":
-          description: Error de validación o datos incorrectos
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Tag no encontrado o ID inválido
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorServer"
-    delete:
-      summary: Eliminar un tag por ID (y quitar referencias en posts)
-      tags:
-        - Tag
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          example: "60c72b2f9b1d8e3a5c8d9876"
-      responses:
-        "200":
-          description: Tag y referencias eliminadas correctamente
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tag"
-        "404":
-          description: Tag no encontrado
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-        "500":
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorServer"
+  
   /postimages:
     get:
       summary: Obtener todas las imágenes

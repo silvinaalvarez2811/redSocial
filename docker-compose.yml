@@ -44,6 +44,7 @@ services:
     volumes:
       - redis_insight:/db
   api:
+    build: .
     image: api-redsocial:1.0.1
     ports: 
       - 5000:3000

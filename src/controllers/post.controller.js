@@ -1,7 +1,6 @@
 const Post = require("../models/post");
 const Comment = require("../models/comment");
 const PostImage = require("../models/postImage");
-const Tag = require("../models/tag");
 const { saveImage } = require("../aditionalFunctions/image");
 const { obtenerFechaLimite } = require("../aditionalFunctions/comment");
 const redisClient = require("../redis")
@@ -35,7 +34,7 @@ const getPostById = async (req, res) => {
   }
 };
 
-const getPostwithImagesTagsCommentsById = async (req, res) => {
+const getPostwithImagesCommentsById = async (req, res) => {
   try {
     const id = req.params.id;
     const fechaLimite = obtenerFechaLimite();
@@ -43,7 +42,6 @@ const getPostwithImagesTagsCommentsById = async (req, res) => {
 
     const data = await Post.findById(id)
       .select("-__v")
-      .populate("tags", "name")
       .populate("images", "imageUrl")
       .populate("userId", "userName email ")
       .populate({
@@ -64,32 +62,14 @@ const getPostwithImagesTagsCommentsById = async (req, res) => {
 
 const createPost = async (req, res) => {
   try {
-    const { description, userId, tags, lookingFor } = req.body;
+    const { description, userId, lookingFor } = req.body;
 
     if (!userId || !description || !lookingFor) {
       return res.status(400).json({ message: "Faltan datos requeridos" });
     }
 
-    // Crear el post inicialmente sin tags ni imágenes
+    // Crear el post inicialmente sin imágenes
     const newPost = await Post.create({ description, userId, lookingFor });
-
-    // Procesar tags: convertir string separado por coma en array limpio
-    let tagArray = [];
-    if(Array.isArray(tags)) {
-      tagArray = tags;
-    }
-
-    // Buscar o crear tags y guardar sus IDs
-    const tagIds = [];
-    for (const name of tagArray) {
-      let tag = await Tag.findOne({ name });
-      if (!tag) {
-        tag = await Tag.create({ name });
-      }
-      tagIds.push(tag._id);
-    }
-    newPost.tags = tagIds;
-    await newPost.save();
 
     // Si vienen archivos (imágenes) en req.files, guardarlos y crear registros
     if (req.files && req.files.length > 0) {
@@ -114,7 +94,6 @@ const createPost = async (req, res) => {
     // Buscar el post creado con populate para devolver datos completos
     const postFinal = await Post.findById(newPost._id)
       .select("-__v")
-      .populate("tags", "name")
       .populate({
         path: "images",
         select: "-__v",
@@ -169,7 +148,6 @@ const updatePost = async (req, res) => {
       await Post.updateOne({ _id: post._id }, { $set: { images: imageIds } });
     }
     const postUpdated = await Post.findById(id)
-      .populate("tags", "name -_id")
       .populate("images")
       .populate("userId", "userName")
       .lean();
@@ -181,51 +159,6 @@ const updatePost = async (req, res) => {
   }
 };
 
-const addTagsToPost = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    let { tags } = req.body;
-    const cacheKey = `Post-${postId}`
-
-    if (!tags || !Array.isArray(tags)) {
-      return res.status(400).json({ message: "Debes enviar un array de tags" });
-    }
-    // Si tags viene como string, convertir a array
-    if (typeof tags === "string") {
-      tags = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0);
-    }
-    const post = await Post.findById(postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post no encontrado" });
-    }
-    const tagIds = [];
-
-    for (const tagName of tags) {
-      let tag = await Tag.findOne({ name: tagName });
-      if (!tag) {
-        tag = await Tag.create({ name: tagName });
-      }
-      tagIds.push(tag._id);
-    }
-
-    // Agregar solo los que no estén ya en post.tags
-    tagIds.forEach((id) => {
-      if (!post.tags.includes(id)) {
-        post.tags.push(id);
-      }
-    });
-    await post.save();
-    await redisClient.set(cacheKey, JSON.stringify(post), {EX: 1800})
-    res.status(200).json({ message: "Tags agregados", tags: post.tags });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error al agregar tags", error: error.message });
-  }
-};
 
 const deleteById = async (req, res) => {
   try {
@@ -303,10 +236,9 @@ const updatePostImagesById = async (req, res) => {
 module.exports = {
   getPosts,
   getPostById,
-  getPostwithImagesTagsCommentsById,
+  getPostwithImagesCommentsById,
   createPost,
   updatePost,
-  addTagsToPost,
   deleteById,
   deletePostImage,
   updatePostImagesById,
