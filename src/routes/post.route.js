@@ -2,7 +2,7 @@ const { Router } = require("express");
 const { postController } = require("../controllers");
 const { fileFilter } = require("../aditionalFunctions/image");
 const multer = require("multer");
-const { validatorObjectId, cacheMiddleware } = require('../middlewares');
+const { validatorObjectId, cacheMiddleware } = require("../middlewares");
 
 const router = Router();
 const upload = multer({
@@ -12,52 +12,61 @@ const upload = multer({
 });
 
 //rutas get
-router.get("/full/:id", 
-  validatorObjectId.validarObjectId, 
+router.get(
+  "/full/:id",
+  validatorObjectId.validarObjectId,
   cacheMiddleware.checkCache("Post"),
   postController.getPostwithImagesCommentsById
 );
 
-router.get("/:id", 
+router.get(
+  "/:id",
   validatorObjectId.validarObjectId,
   cacheMiddleware.checkCache("Post"),
   postController.getPostById
 );
 
-router.get("/", 
+router.get(
+  "/",
   cacheMiddleware.checkCacheAll("Posts"),
   postController.getPosts
 );
 
 //post
-router.post("/", 
-  upload.array("images", 6), 
-  postController.createPost
-);
+router.post("/", upload.array("images", 6), postController.createPost);
 
 //put
-router.put("/:id", 
-  upload.array("images", 6), 
-  validatorObjectId.validarObjectId, 
+router.put(
+  "/:id",
+  upload.array("images", 6),
+  validatorObjectId.validarObjectId,
   postController.updatePost
 );
 
-router.put("/:id/images",
+router.put(
+  "/:id/images",
   upload.array("images", 6),
   validatorObjectId.validarObjectId,
   postController.updatePostImagesById
 );
 
 //delete
-router.delete("/:id/:imageId", 
+router.delete(
+  "/:id/:imageId",
   validatorObjectId.validarPostImageIds,
   postController.deletePostImage
 );
 
-router.delete("/:id", 
+router.delete(
+  "/:id",
   validatorObjectId.validarObjectId,
   cacheMiddleware.deleteCache("Post"),
   postController.deleteById
+);
+router.post(
+  "/confirmExchange",
+  validatorObjectId.validarExchangeBody,
+  postController.confirmExchange
 );
 
 module.exports = router;

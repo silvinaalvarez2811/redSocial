@@ -3,8 +3,8 @@ const conectarDB = require("./config/db");
 const redisClient = require("./redis");
 const swaggerUI = require("swagger-ui-express");
 const YAML = require("yamljs");
-const path = require('path');
-const swaggerDoc = YAML.load(path.join(__dirname, './docs/swagger.yml'));
+const path = require("path");
+const swaggerDoc = YAML.load(path.join(__dirname, "./docs/swagger.yml"));
 require("dotenv").config();
 
 const app = express();
@@ -31,6 +31,6 @@ app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDoc));
 
 app.listen(PORT, async () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
-  console.log(`Documentación Swagger: http://localhost:${PORT}/api-docs`);
-  await redisClient.connect()
+  console.log(`Documentación Swagger: http://localhost:5000/api-docs`);
+  await redisClient.connect();
 });

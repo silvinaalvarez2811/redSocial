@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  title: Red social Con MongoDb
-  description: Documentación para la red social
+  title: ViceVersa economia circular
+  description: Documentación para ViceVersa
   version: 1.0.0
 
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:5000
 
 components:
   schemas:
@@ -90,9 +90,19 @@ components:
           example: "664fe8cbfdf8bc730ff2537e"
         images:
           type: array
-          items: 
+          items:
             type: object
-            example: [{_id: "686ee62df05139ccdc28feec", imageUrl: ["uploads/imagen1.jpg"]}, {_id: "6356ee62df32139ccdc28fed3", imageUrl: ["uploads/imagen2.jpg"]}]
+            example:
+              [
+                {
+                  _id: "686ee62df05139ccdc28feec",
+                  imageUrl: ["uploads/imagen1.jpg"],
+                },
+                {
+                  _id: "6356ee62df32139ccdc28fed3",
+                  imageUrl: ["uploads/imagen2.jpg"],
+                },
+              ]
 
     Comment:
       type: object
@@ -847,7 +857,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorServer"
-  
+
   /postimages:
     get:
       summary: Obtener todas las imágenes
@@ -946,7 +956,7 @@ paths:
     put:
       summary: Actualizar imagen de un post
       tags:
-        - PostImages  
+        - PostImages
       parameters:
         - in: path
           name: id

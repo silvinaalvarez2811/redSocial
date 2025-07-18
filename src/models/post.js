@@ -22,18 +22,21 @@ const postSchema = new mongoose.Schema(
     lookingFor: {
       type: String,
       required: [true, "lookingFor es requerido"],
-       validate: {
+      validate: {
         validator: (t) => t.trim().length > 0,
         message: () => "El post debe contener una descripción",
       },
     },
-
-    tags: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Tag",
-      },
-    ],
+    status: {
+      type: String,
+      enum: ["available", "engaged", "completed"],
+      default: "available",
+    },
+    exchangedWith: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
 
     images: [
       {

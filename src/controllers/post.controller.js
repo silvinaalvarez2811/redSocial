@@ -1,16 +1,17 @@
 const Post = require("../models/post");
 const Comment = require("../models/comment");
 const PostImage = require("../models/postImage");
+const User = require("../models/user");
 const { saveImage } = require("../aditionalFunctions/image");
 const { obtenerFechaLimite } = require("../aditionalFunctions/comment");
-const redisClient = require("../redis")
+const redisClient = require("../redis");
 
 const getPosts = async (req, res) => {
   try {
     const posts = await Post.find().select("-__v");
-    const cacheKey = `Posts`
+    const cacheKey = `Posts`;
 
-    await redisClient.set(cacheKey, JSON.stringify(posts), {EX: 300})
+    await redisClient.set(cacheKey, JSON.stringify(posts), { EX: 300 });
     res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -20,14 +21,14 @@ const getPosts = async (req, res) => {
 const getPostById = async (req, res) => {
   try {
     const id = req.params.id;
-    const cacheKey = `Post-${id}`
+    const cacheKey = `Post-${id}`;
     const post = await Post.findById(id);
 
     if (!post) {
       return res.status(404).json({ message: "Post inexistente" });
     }
 
-    await redisClient.set(cacheKey, JSON.stringify(post), {EX: 1800})
+    await redisClient.set(cacheKey, JSON.stringify(post), { EX: 1800 });
     res.status(200).json(post);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -38,7 +39,7 @@ const getPostwithImagesCommentsById = async (req, res) => {
   try {
     const id = req.params.id;
     const fechaLimite = obtenerFechaLimite();
-    const cacheKey = `Post-all-${id}`
+    const cacheKey = `Post-all-${id}`;
 
     const data = await Post.findById(id)
       .select("-__v")
@@ -51,7 +52,7 @@ const getPostwithImagesCommentsById = async (req, res) => {
         populate: { path: "userId", select: "userName" },
       });
 
-    await redisClient.set(cacheKey, JSON.stringify(data), {EX: 300})
+    await redisClient.set(cacheKey, JSON.stringify(data), { EX: 300 });
     res.status(200).json(data);
   } catch (e) {
     res
@@ -110,11 +111,11 @@ const createPost = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const id = req.params.id;
-    const cacheKey = `Post-${id}`
+    const cacheKey = `Post-${id}`;
 
     const { description, userId, lookingFor } = req.body;
 
-    if (!description || !userId || !lookingFor ) {
+    if (!description || !userId || !lookingFor) {
       return res.status(400).json({ message: "Faltan datos requeridos" });
     }
     const post = await Post.findById(id);
@@ -152,13 +153,12 @@ const updatePost = async (req, res) => {
       .populate("userId", "userName")
       .lean();
 
-    await redisClient.set(cacheKey, JSON.stringify(post), {EX: 1800})
+    await redisClient.set(cacheKey, JSON.stringify(post), { EX: 1800 });
     res.status(200).json(postUpdated);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 const deleteById = async (req, res) => {
   try {
@@ -181,7 +181,7 @@ const deleteById = async (req, res) => {
 const deletePostImage = async (req, res) => {
   try {
     const { id, imageId } = req.params;
-    const cacheKey = `Post-${id}`
+    const cacheKey = `Post-${id}`;
 
     const deletedImage = await PostImage.findOneAndDelete({
       postId: id,
@@ -194,8 +194,8 @@ const deletePostImage = async (req, res) => {
     post.images.pull(imageId);
     await post.save();
 
-    await redisClient.del(`PostImage-${imageId}`)
-    await redisClient.set(cacheKey, JSON.stringify(post))
+    await redisClient.del(`PostImage-${imageId}`);
+    await redisClient.set(cacheKey, JSON.stringify(post));
     res.status(200).json({ message: "Imagen eliminada correctamente", post });
   } catch (e) {
     res
@@ -207,7 +207,7 @@ const deletePostImage = async (req, res) => {
 const updatePostImagesById = async (req, res) => {
   try {
     const { id } = req.params;
-    const cacheKey = `Post-${id}`
+    const cacheKey = `Post-${id}`;
 
     const post = await Post.findById(id);
 
@@ -221,15 +221,56 @@ const updatePostImagesById = async (req, res) => {
 
     const idImages = await PostImage.find({ postId: id }).select("_id");
     await Post.updateOne({ _id: id }, { $set: { images: idImages } });
-    
-    await redisClient.set(cacheKey, JSON.stringify(post))
-    res
-      .status(201)
-      .json({ message: `Imagenes actualizadas correctamente` });
+
+    await redisClient.set(cacheKey, JSON.stringify(post));
+    res.status(201).json({ message: `Imagenes actualizadas correctamente` });
   } catch (e) {
     res
       .status(500)
       .json({ message: "Ocurrió un error en el servidor", error: e.message });
+  }
+};
+
+const confirmExchange = async (req, res) => {
+  try {
+    const { postId, exchangedWithId } = req.body;
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Publicación no encontrada" });
+    }
+
+    //actualizar el status
+    post.status = "completed";
+    post.exchangedWith = exchangedWithId;
+
+    await post.save();
+    //Agregar al historial del user de la publicacion
+    await User.findByIdAndUpdate(post.userId, {
+      $push: {
+        history: {
+          postId,
+          exchangedWith: exchangedWithId,
+          review: null,
+          valuation: null,
+        },
+      },
+    });
+    //agregar al historial del user con el que se intercambia
+    await User.findByIdAndUpdate(exchangedWithId, {
+      $push: {
+        history: {
+          postId,
+          exchangedWith: post.userId,
+          review: null,
+          valuation: null,
+        },
+      },
+    });
+    res.json({ message: "Intercambio registrado" });
+  } catch (error) {
+    console.error("Error en confirmExchange:", error);
+    res.status(500).json({ message: "error interno del servidor" });
   }
 };
 
@@ -242,4 +283,5 @@ module.exports = {
   deleteById,
   deletePostImage,
   updatePostImagesById,
+  confirmExchange,
 };
