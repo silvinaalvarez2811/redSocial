@@ -27,8 +27,11 @@ const deleteCache = (modelo) => {
     const dataById = await client.get(`${modelo}-${id}`);
     const dataByModel = await client.get(`${modelo}-all`);
 
-    if (dataById && dataByModel) {
+    if (dataById) {
       await client.del(`${modelo}-${id}`);
+    }
+    if(dataByModel) {
+      await client.del(`${modelo}-all`);
     }
     next(); 
   }

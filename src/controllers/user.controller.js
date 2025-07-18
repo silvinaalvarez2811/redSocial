@@ -2,6 +2,7 @@ const User = require("../models/user");
 const Post = require("../models/post");
 const Comment = require("../models/comment");
 const redisClient = require("../redis");
+const { saveAvatarImage, deleteImage } = require("../aditionalFunctions/image");
 
 const getUsers = async (_, res) => {
   try {
@@ -51,18 +52,29 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
+    const { userName, password, email, firstName, lastName, bio, location } = req.body
     const cacheKey = `User-${id}`;
-    const updatedUser = await User.findByIdAndUpdate(id, req.body, {
+
+    const user = await User.findByIdAndUpdate(id, { userName, email, firstName, lastName, bio, location }, {
       new: true,
     });
-    if (!updatedUser) {
+
+    if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    await redisClient.set(cacheKey, JSON.stringify(updatedUser), { EX: 1800 });
+    if(req.file) {
+      saveAvatarImage(user.userName, req.file);
+      user.avatar = `${req.file.destination}${user.userName} - ${req.file.originalname}`
+    }
+
+    user.password = password;
+    await user.save()
+
+    await redisClient.set(cacheKey, JSON.stringify(user), { EX: 1800 });
     res
       .status(200)
-      .json({ message: "Usuario actualizado", usuario: updatedUser });
+      .json({ message: "Usuario actualizado", usuario: user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -79,6 +91,10 @@ const deleteById = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
+    if(deletedUser.avatar.includes('uploads/avatar')) {
+      deleteImage(deletedUser.avatar)
+    }
+    
     res
       .status(200)
       .json({ message: "Usuario eliminado", usuario: deletedUser });

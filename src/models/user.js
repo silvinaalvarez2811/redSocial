@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
-const { Schema } = mongoose;
 const validator = require("validator");
+const bcrypt = require("bcrypt")
+SALT_WORK_FACTOR = 10;
 
 const userSchema = new mongoose.Schema(
   {
@@ -10,9 +11,24 @@ const userSchema = new mongoose.Schema(
       unique: [true, "ya existe ese userName"],
     },
 
+    password: {
+      type: String,
+      required: [true, "La contraseña es requerida"],
+      validate: [
+        {
+          validator: (p) => validator.isLength(p, {min:8, max:15}),
+          message: 'La contraseña debería tener entre 8 y 15 caracteres'
+        },
+        {
+          validator: (p) => validator.isAlphanumeric(p),
+          message: 'La contraseña debe contener caracteres alfanuméricos'
+        } 
+      ]
+    }, 
+
     email: {
       type: String,
-      required: [true, "email es requerido"],
+      required: [true, "El email es requerido"],
       validate: {
         validator: (t) => validator.isEmail(t),
         message: (props) => `${props.value} no es un email válido`,
@@ -20,11 +36,11 @@ const userSchema = new mongoose.Schema(
     },
     firstName: {
       type: String,
-      required: [true, "el nombre es requerido"],
+      required: [true, "El nombre es requerido"],
     },
     lastName: {
       type: String,
-      required: [true, "el apellido es requerido"],
+      required: [true, "El apellido es requerido"],
     },
     bio: {
       type: String,
@@ -36,7 +52,7 @@ const userSchema = new mongoose.Schema(
 
     location: {
       type: String,
-      required: [true, "la ubicación es requerida"],
+      required: [true, "La ubicación es requerida"],
     },
     reputation: { type: Number, default: 0 },
     //aca va la url de la imagen, o si no ponemos la inicial del nickname o del nombre completo
@@ -63,7 +79,38 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-//para poder obtener el nombre completo del ususario
+
+// Para encriptar la contraseña - pre es un middleware de mongoose
+userSchema.pre('save', function(next) {
+  var user = this;
+
+  // Solo crea el hash para la contraseña si es nueva o fue modificada
+  if(!user.isModified('password')) return next();
+
+  // Generamos la sal
+  bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt){
+    if(err) return next(err);
+
+    // Se crea el hash para la contraseña usando la sal
+    bcrypt.hash(user.password, salt, function(err, hash){
+      if(err) return next(err);
+
+      // Se sobreescribe la contraseña con la hasheada
+      user.password = hash;
+      next();
+    });
+  });
+});
+
+// Metodo del modelo para poder comparar la contraseña
+userSchema.methods.comparePassword = function(candidatePassword, cb) {
+  bcrypt.compare(candidatePassword, this.password, function(err, isMatch){
+    if(err) return cb(err);
+    cb(null, isMatch);
+  });
+};
+
+// Para poder obtener el nombre completo del usuario
 userSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
