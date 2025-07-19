@@ -64,10 +64,22 @@ const validarExchangeBody = (req, res, next) => {
   next();
 };
 
+const validarRequestExchange = (req, res, next) => {
+  const { postId, requesterId } = req.body;
+  if (!postId || !requesterId) {
+    return res.status(400).json({ message: "Faltan postId o requesterId" });
+  }
+  if (!Types.ObjectId.isValid(postId) || !Types.ObjectId.isValid(requesterId)) {
+    return res.status(400).json({ message: "postId o requesterId inválidos" });
+  }
+  next();
+};
+
 module.exports = {
   validarObjectId,
   validarPostId,
   validarFollowId,
   validarPostImageIds,
   validarExchangeBody,
+  validarRequestExchange,
 };

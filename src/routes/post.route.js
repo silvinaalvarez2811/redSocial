@@ -64,6 +64,12 @@ router.delete(
   postController.deleteById
 );
 router.post(
+  "/requestExchange",
+  validatorObjectId.validarRequestExchange,
+  postController.requestExchange
+);
+
+router.post(
   "/confirmExchange",
   validatorObjectId.validarExchangeBody,
   postController.confirmExchange

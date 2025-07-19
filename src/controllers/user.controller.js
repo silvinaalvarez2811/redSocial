@@ -14,6 +14,21 @@ const getUsers = async (_, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const getHistoryById = async (req, res) => {
+  try {
+    const id = await req.params.id;
+    const user = await User.findById(id)
+      .populate("history.postId")
+      .populate("history.exchangedWith", "firstName lastName avatar"); //datos del otro user
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const getUserById = async (req, res) => {
   try {
@@ -87,4 +102,11 @@ const deleteById = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, getUserById, createUser, updateUser, deleteById };
+module.exports = {
+  getUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteById,
+  getHistoryById,
+};
