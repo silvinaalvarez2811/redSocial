@@ -44,7 +44,26 @@ const getPostById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const getAllPostsWithImagesComments = async (req, res) => {
+  try {
+    const fechaLimite = obtenerFechaLimite();
 
+    const posts = await Post.find({})
+      .select("-__v")
+      .populate("images", "imageUrl")
+      .populate("userId", "userName email")
+      .populate({
+        path: "comments",
+        match: { createdAt: { $gte: fechaLimite } },
+        select: "text userId createdAt",
+        populate: { path: "userId", select: "userName" },
+      });
+
+    res.status(200).json(posts);
+  } catch (e) {
+    res.status(500).json({ message: "Error en servidor", error: e.message });
+  }
+};
 const getPostwithImagesCommentsById = async (req, res) => {
   try {
     const id = req.params.id;
@@ -334,4 +353,5 @@ module.exports = {
   updatePostImagesById,
   requestExchange,
   confirmExchange,
+  getAllPostsWithImagesComments,
 };

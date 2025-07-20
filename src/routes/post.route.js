@@ -18,6 +18,7 @@ router.get(
   cacheMiddleware.checkCache("Post"),
   postController.getPostwithImagesCommentsById
 );
+router.get("/full", postController.getAllPostsWithImagesComments);
 
 router.get(
   "/:id",
