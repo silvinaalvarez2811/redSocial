@@ -140,7 +140,6 @@ async function seedDatabase() {
         description: "Vestido negro corto con escote en V talle XS",
         lookingFor: "Busco un pantalón cargo negro de pierna recta talle L",
         images: ["286eca120fbeba9a94adfb47", "336eca120fbeba9a94adfbe5"],
-        tags: ["6877de31caabab88b2dcc34b", "6877de47f6760c152ba56732"],
         status: "available",
         requestedBy: null,
         exchangedWith: null,
@@ -151,7 +150,6 @@ async function seedDatabase() {
         description: "Top rosa manga larga, escote cuadrado talle S",
         lookingFor: "Remera manga larga de color lila y estampado liso talle S",
         images: ["322eca120fbeba9a94adfff5"],
-        tags: ["6877de39129c9cadf51d34ea", "6877de4180f5517bc976bba7"],
         status: "completed",
         requestedBy: "6877e4efb85e8f79c12f431d", // otro usuario
         exchangedWith: "6877e4efb85e8f79c12f431d", // otro usuario
@@ -162,7 +160,6 @@ async function seedDatabase() {
         description: "Campera bomber bordó talle L",
         lookingFor: "Campera inflable gris talle XL",
         images: ["452e23120fbeba9a94adaaf5"],
-        tags: ["6877e0af57ebe455d89ba7e3", "6877e0fc1ad933b623be80f5"],
         status: "engaged",
         requestedBy: "68782b1ebe059749e619ef2b",
         exchangedWith: null,
@@ -174,7 +171,6 @@ async function seedDatabase() {
         lookingFor:
           "Campera de cuero con corderito marrón, preferentemente talle M",
         images: ["6878285df1419705bea9f8ae"],
-        tags: [],
         status: "available",
         requestedBy: null,
         exchangedWith: null,
