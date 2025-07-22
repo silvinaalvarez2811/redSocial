@@ -71,6 +71,7 @@ const userSchema = new mongoose.Schema(
           max: [10, "La valoración no puede ser mayor que 10"],
           default: 0,
         },
+        isValued: { type: Boolean, default: false },
       },
     ],
   },

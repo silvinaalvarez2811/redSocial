@@ -7,17 +7,20 @@ const multer = require('multer')
 
 const upload = multer ({ dest: 'uploads/avatar/', fileFilter, limits: { fileSize: 1024 * 1024 * 4 }})
 
-// Probado - todo OK 
-router.get("/", 
-    cacheMiddleware.checkCacheAll("Users"),
-    userController.getUsers
+// Probado - todo OK
+router.get(
+  "/",
+  cacheMiddleware.checkCacheAll("Users"),
+  userController.getUsers
 );
 
-router.get("/:id", 
-    validatorObjectId.validarObjectId, 
-    cacheMiddleware.checkCache("User"),
-    userController.getUserById
+router.get(
+  "/:id",
+  validatorObjectId.validarObjectId,
+  cacheMiddleware.checkCache("User"),
+  userController.getUserById
 );
+router.get("/:id/history", userController.getHistoryById);
 
 router.post("/", 
     userController.createUser

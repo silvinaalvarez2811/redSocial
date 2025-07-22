@@ -18,6 +18,7 @@ router.get(
   cacheMiddleware.checkCache("Post"),
   postController.getPostwithImagesCommentsById
 );
+router.get("/full", postController.getAllPostsWithImagesComments);
 
 router.get(
   "/:id",
@@ -63,6 +64,12 @@ router.delete(
   cacheMiddleware.deleteCache("Post"),
   postController.deleteById
 );
+router.post(
+  "/requestExchange",
+  validatorObjectId.validarRequestExchange,
+  postController.requestExchange
+);
+
 router.post(
   "/confirmExchange",
   validatorObjectId.validarExchangeBody,

@@ -8,7 +8,17 @@ const redisClient = require("../redis");
 
 const getPosts = async (req, res) => {
   try {
-    const posts = await Post.find().select("-__v");
+    const { status, userId } = req.query;
+    let filter = {};
+
+    if (status) {
+      filter.status = status;
+    }
+    if (userId) {
+      filter.userId = userId;
+    }
+
+    const posts = await Post.find(filter).select("-__v");
     const cacheKey = `Posts`;
 
     await redisClient.set(cacheKey, JSON.stringify(posts), { EX: 300 });
@@ -34,7 +44,26 @@ const getPostById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const getAllPostsWithImagesComments = async (req, res) => {
+  try {
+    const fechaLimite = obtenerFechaLimite();
 
+    const posts = await Post.find({})
+      .select("-__v")
+      .populate("images", "imageUrl")
+      .populate("userId", "userName email")
+      .populate({
+        path: "comments",
+        match: { createdAt: { $gte: fechaLimite } },
+        select: "text userId createdAt",
+        populate: { path: "userId", select: "userName" },
+      });
+
+    res.status(200).json(posts);
+  } catch (e) {
+    res.status(500).json({ message: "Error en servidor", error: e.message });
+  }
+};
 const getPostwithImagesCommentsById = async (req, res) => {
   try {
     const id = req.params.id;
@@ -230,16 +259,53 @@ const updatePostImagesById = async (req, res) => {
       .json({ message: "Ocurrió un error en el servidor", error: e.message });
   }
 };
-
-const confirmExchange = async (req, res) => {
+const requestExchange = async (req, res) => {
   try {
-    const { postId, exchangedWithId } = req.body;
+    const { postId, requesterId } = req.body;
     const post = await Post.findById(postId);
 
     if (!post) {
+      return res.status(404).json({ message: "Publicación no  encontrada" });
+    }
+    if (post.status !== "available") {
+      return res
+        .status(400)
+        .json({ message: "Publicación no disponible para el intercambio" });
+    }
+    post.status = "engaged";
+    post.requestedBy = requesterId;
+    await post.save();
+    res.status(200).json(post);
+  } catch (error) {
+    console.error("error en el pedido de intercambio".error);
+    res.status(500).json({ message: "error interno del servidor" });
+  }
+};
+
+const confirmExchange = async (req, res) => {
+  try {
+    const { postId, exchangedWithId, userId } = req.body;
+    const post = await Post.findById(postId);
+    const exchangedWithUser = await User.findById(exchangedWithId);
+    if (!post) {
       return res.status(404).json({ message: "Publicación no encontrada" });
     }
-
+    if (post.userId.toString() !== userId) {
+      return res.status(403).json({
+        message: "Debe ser el dueño del post para confirmar el intercambio",
+      });
+    }
+    if (!exchangedWithUser) {
+      return res
+        .status(404)
+        .json({ message: "Usuario que quiere intercambiar no encontrado" });
+    }
+    if (post.status !== "engaged") {
+      return res.status(400).json({
+        message:
+          "El intercambio no puede confirmarse. La publicación debe estar en estado 'engaged'",
+      });
+    }
     //actualizar el status
     post.status = "completed";
     post.exchangedWith = exchangedWithId;
@@ -253,6 +319,7 @@ const confirmExchange = async (req, res) => {
           exchangedWith: exchangedWithId,
           review: null,
           valuation: null,
+          isValued: false,
         },
       },
     });
@@ -264,10 +331,11 @@ const confirmExchange = async (req, res) => {
           exchangedWith: post.userId,
           review: null,
           valuation: null,
+          isValued: false,
         },
       },
     });
-    res.json({ message: "Intercambio registrado" });
+    res.status(200).json(post);
   } catch (error) {
     console.error("Error en confirmExchange:", error);
     res.status(500).json({ message: "error interno del servidor" });
@@ -283,5 +351,7 @@ module.exports = {
   deleteById,
   deletePostImage,
   updatePostImagesById,
+  requestExchange,
   confirmExchange,
+  getAllPostsWithImagesComments,
 };
