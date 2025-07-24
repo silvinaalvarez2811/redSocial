@@ -15,11 +15,17 @@ router.get(
 );
 
 router.get(
+  "/user",
+  userController.getUserByUsername
+);
+
+router.get(
   "/:id",
   validatorObjectId.validarObjectId,
   cacheMiddleware.checkCache("User"),
   userController.getUserById
 );
+
 router.get("/:id/history", userController.getHistoryById);
 
 router.post("/", 

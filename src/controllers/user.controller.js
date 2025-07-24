@@ -31,6 +31,21 @@ const getHistoryById = async (req, res) => {
   }
 };
 
+const getUserByUsername = async (req, res) => {
+  try {
+    const { username } = req.query;
+    const user = await User.findOne({userName: username})
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario inexistente" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getUserById = async (req, res) => {
   try {
     const id = req.params.id;
@@ -49,7 +64,12 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { userName } = req.body;
+    const { userName, password, email, firstName, lastName, location } = req.body;
+
+    if(!userName || !password || !email || !firstName || !lastName || !location) {
+      return res.status(400).json({message: "Faltan datos requeridos"})
+    }
+
     const existingUser = await User.findOne({ userName });
     if (existingUser) {
       return res
@@ -57,7 +77,7 @@ const createUser = async (req, res) => {
         .json({ message: "Este userName ya está siendo utilizado" });
     }
 
-    const newUser = await User.create(req.body);
+    const newUser = await User.create({ userName, password, email, firstName, lastName, location});
     res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -120,6 +140,7 @@ const deleteById = async (req, res) => {
 
 module.exports = {
   getUsers,
+  getUserByUsername,
   getUserById,
   createUser,
   updateUser,
