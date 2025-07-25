@@ -99,8 +99,8 @@ const updateUser = async (req, res) => {
     }
 
     if(req.file) {
-      saveAvatarImage(user.userName, req.file);
-      user.avatar = `${req.file.destination}${user.userName} - ${req.file.originalname}`
+      const imageAvatar = saveAvatarImage(user.userName, req.file);
+      user.avatar = imageAvatar.replace("./", "/")
     }
 
     user.password = password;

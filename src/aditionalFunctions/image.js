@@ -8,7 +8,8 @@ const saveImage = (file) => {
 }
 
 const saveAvatarImage = (userName, file) => {
-  const newPath = `./uploads/avatar/${userName} - ${file.originalname}`;
+  const formatName = file.originalname.replace(/ /g, "_");
+  const newPath = `./uploads/avatar/${userName}-${formatName}`;
   fs.renameSync(file.path, newPath);
   return newPath;
 } 
