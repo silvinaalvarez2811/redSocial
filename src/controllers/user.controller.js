@@ -3,6 +3,7 @@ const Post = require("../models/post");
 const Comment = require("../models/comment");
 const redisClient = require("../redis");
 const { saveAvatarImage, deleteImage } = require("../aditionalFunctions/image");
+const bcrypt = require("bcrypt")
 
 const getUsers = async (_, res) => {
   try {
@@ -87,29 +88,42 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
-    const { userName, password, email, firstName, lastName, bio, location } = req.body
+    const { userName, email, firstName, lastName, bio, location } = req.body
     const cacheKey = `User-${id}`;
 
-    const user = await User.findByIdAndUpdate(id, { userName, email, firstName, lastName, bio, location }, {
-      new: true,
-    });
+    const user = await User.findByIdAndUpdate(id, { userName, email, firstName, lastName, bio, location });
+
+    if(req.body.password) {  // Para hacer si te pasan la password en el req.body
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
 
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    if(req.file) {
-      const imageAvatar = saveAvatarImage(user.userName, req.file);
-      user.avatar = imageAvatar.replace("./", "/")
-    }
-
-    user.password = password;
     await user.save()
-
     await redisClient.set(cacheKey, JSON.stringify(user), { EX: 1800 });
     res
       .status(200)
       .json({ message: "Usuario actualizado", usuario: user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const updateAvatarUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findById(id)
+
+    const imageAvatar = saveAvatarImage(user.userName, req.file);
+    user.avatar = imageAvatar.replace("./", "/")
+    await user.save()
+
+    res
+      .status(200)
+      .json({ message: "Avatar actualizado", usuario: user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -142,6 +156,7 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
+  updateAvatarUser,
   createUser,
   updateUser,
   deleteById,

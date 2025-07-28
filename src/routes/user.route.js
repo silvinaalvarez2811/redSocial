@@ -33,9 +33,14 @@ router.post("/",
 );
 
 router.put("/:id", 
-    upload.single('image'),
     validatorObjectId.validarObjectId, 
     userController.updateUser
+);
+
+router.put("/avatar/:id", 
+    upload.single('image'),
+    validatorObjectId.validarObjectId, 
+    userController.updateAvatarUser
 );
 
 router.delete("/:id", 

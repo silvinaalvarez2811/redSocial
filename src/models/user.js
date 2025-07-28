@@ -13,7 +13,9 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: [true, "La contraseña es requerida"],
+      required: function() {
+        return this.isNew; // Sólo es requerido al crear el usuario
+      },
       validate: [
         {
           validator: (p) => validator.isLength(p, {min:8, max:15}),

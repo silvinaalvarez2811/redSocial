@@ -14,6 +14,7 @@ async function seedDatabase() {
       {
         _id: "6877e4efb85e8f79c12f431d",
         userName: "valen_12",
+        password: "1234vaLen",
         email: "valeng12@gmail.com",
         firstName: "Valentina",
         lastName: "Perez",
@@ -26,6 +27,7 @@ async function seedDatabase() {
       {
         _id: "6877e4f5416c8df2b828b5e5",
         userName: "lunaaU",
+        password: "1234naLulu",
         email: "lunaau23@gmail.com",
         firstName: "Luna",
         lastName: "Ulloa",
@@ -38,6 +40,7 @@ async function seedDatabase() {
       {
         _id: "6877e4fc4ec2f21d067a4d06",
         userName: "juanJT",
+        password: "1234Juancito",
         email: "juanjt.34@gmail.com",
         firstName: "Juan",
         lastName: "Torres",
@@ -50,6 +53,7 @@ async function seedDatabase() {
       {
         _id: "68782074b4e57faaceb3c823",
         userName: "miraYapu",
+        password: "1234miraYapu",
         email: "mirayapura@gmail.com",
         firstName: "Miranda",
         lastName: "Yapur",
@@ -62,6 +66,7 @@ async function seedDatabase() {
       {
         _id: "68782b1ebe059749e619ef2b",
         userName: "robyR3",
+        password: "1234RobyR3",
         email: "roobyr.3@gmail.com",
         firstName: "Roberto",
         lastName: "Rodriguez",
