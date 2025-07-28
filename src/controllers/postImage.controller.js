@@ -1,14 +1,15 @@
+const path = require("path");
 const PostImage = require("../models/postImage");
 const Post = require("../models/post");
-const { saveImage, deleteImage } = require("../aditionalFunctions/image");
-const redisClient = require("../redis")
+const { deleteImage } = require("../aditionalFunctions/image");
+const redisClient = require("../redis");
 
 const getAllPostImages = async (req, res) => {
   try {
     const images = await PostImage.find({}).select("-__v");
-    const cacheKey = `PostImages`
+    const cacheKey = `PostImages`;
 
-    await redisClient.set(cacheKey, JSON.stringify(images), {EX: 300})
+    await redisClient.set(cacheKey, JSON.stringify(images), { EX: 300 });
     res.status(200).json(images);
   } catch (e) {
     res
@@ -23,9 +24,9 @@ const getImagesByPost = async (req, res) => {
     const images = await Post.findById(postId)
       .select("images")
       .populate("images", "imageUrl");
-    const cacheKey = `Images-post-${postId}`
+    const cacheKey = `Images-post-${postId}`;
 
-    await redisClient.set(cacheKey, JSON.stringify(images), {EX: 300})
+    await redisClient.set(cacheKey, JSON.stringify(images), { EX: 300 });
     res.status(200).json(images);
   } catch (e) {
     res
@@ -33,7 +34,6 @@ const getImagesByPost = async (req, res) => {
       .json({ message: "Ocurrió un error en el servidor", error: e.message });
   }
 };
-
 
 const createPostImages = async (req, res) => {
   try {
@@ -44,17 +44,22 @@ const createPostImages = async (req, res) => {
       return res.status(404).json({ message: "Post inexistente" });
     }
 
-    req.files.map((file) => saveImage(file));
-
+    // multer ya guardó los archivos en 'uploads/', no hace falta moverlos
     const newImages = req.files.map((file) => ({
       postId,
-      imageUrl: file.destination + file.originalname,
+      imageUrl: `/uploads/${file.filename}`, // ruta para el frontend
     }));
 
-    await PostImage.create(newImages) 
-    const idImages = await PostImage.find({postId}).select('_id')
-    await Post.updateOne({_id: postId}, {$push: {images: idImages}})
-    res.status(201).json(post);
+    const createdImages = await PostImage.create(newImages);
+    const idImages = createdImages.map((img) => img._id);
+
+    // Actualizar el post agregando las imágenes nuevas
+    await Post.updateOne(
+      { _id: postId },
+      { $push: { images: { $each: idImages } } }
+    );
+
+    res.status(201).json({ message: "Imágenes agregadas correctamente", post });
   } catch (e) {
     res
       .status(500)
@@ -65,25 +70,32 @@ const createPostImages = async (req, res) => {
 const updatePostImage = async (req, res) => {
   try {
     const { id } = req.params;
-    const cacheKey = `PostImage-${id}`
+    const cacheKey = `PostImage-${id}`;
     const image = await PostImage.findById(id);
-    // Borro la imagen anterior de la carpeta uploads, la paso a string porque el campo imageurl está guardado como array
-    deleteImage(image.imageUrl.toString());
-    // Actualizo la url por la nueva
-    image.imageUrl = req.file.destination + req.file.originalname; 
-    image.save();
-   
-    saveImage(req.file);  // Guardo la nueva imagen en la carpeta uploads
+    if (!image) {
+      return res.status(404).json({ message: "Imagen no encontrada" });
+    }
+
+    // Borrar imagen física anterior
+    const oldImagePath = path.join(
+      __dirname,
+      "../../uploads",
+      path.basename(image.imageUrl)
+    );
+    deleteImage(oldImagePath);
+
+    // Actualizar url con la nueva imagen (ya guardada por multer)
+    image.imageUrl = `/uploads/${req.file.filename}`;
+    await image.save();
+
+    // Actualizar el post
     const post = await Post.findById(image.postId);
+    // No es necesario modificar el array de imágenes, ya que la imagen es la misma (solo se actualizó URL)
+    // Pero si querés actualizar algo en el post, hacerlo aquí
 
-    post.images.pull(id); // Quito la imagen anterior del array en post
-    post.images.push(image._id); // Agrego la imagen nueva al array en post
-    await post.save();
+    await redisClient.set(cacheKey, JSON.stringify(image), { EX: 1800 });
 
-    await redisClient.set(cacheKey, JSON.stringify(image), {EX: 1800})
-    res
-      .status(201)
-      .json({ message: `Imagen actualizada correctamente` });
+    res.status(201).json({ message: "Imagen actualizada correctamente" });
   } catch (e) {
     res
       .status(500)
@@ -95,11 +107,29 @@ const deleteById = async (req, res) => {
   try {
     const { postId, id } = req.params;
 
-    const oldImage = await PostImage.findOneAndDelete({ _id: id });  // Borro la imagen y la almaceno en la constante
+    const oldImage = await PostImage.findOneAndDelete({ _id: id });
+    if (!oldImage) {
+      return res
+        .status(404)
+        .json({ message: "Imagen no encontrada para borrar" });
+    }
+
+    // Borrar la imagen física
+    const oldImagePath = path.join(
+      __dirname,
+      "../../uploads",
+      path.basename(oldImage.imageUrl)
+    );
+    deleteImage(oldImagePath);
+
     const post = await Post.findById(postId);
-    deleteImage(oldImage.imageUrl.toString());  // Quito la imagen de la carpeta uploads usando la url de la imagen borrada
-    post.images.pull(id);  // Quito la imagen del array de imagenes en post
+    if (!post) {
+      return res.status(404).json({ message: "Post no encontrado" });
+    }
+
+    post.images.pull(id);
     await post.save();
+
     res.status(200).json({ message: "Imagen eliminada correctamente", post });
   } catch (e) {
     res

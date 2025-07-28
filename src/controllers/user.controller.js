@@ -34,7 +34,7 @@ const getHistoryById = async (req, res) => {
 const getUserByUsername = async (req, res) => {
   try {
     const { username } = req.query;
-    const user = await User.findOne({userName: username})
+    const user = await User.findOne({ userName: username });
 
     if (!user) {
       return res.status(404).json({ message: "Usuario inexistente" });
@@ -64,10 +64,18 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { userName, password, email, firstName, lastName, location } = req.body;
+    const { userName, password, email, firstName, lastName, location } =
+      req.body;
 
-    if(!userName || !password || !email || !firstName || !lastName || !location) {
-      return res.status(400).json({message: "Faltan datos requeridos"})
+    if (
+      !userName ||
+      !password ||
+      !email ||
+      !firstName ||
+      !lastName ||
+      !location
+    ) {
+      return res.status(400).json({ message: "Faltan datos requeridos" });
     }
 
     const existingUser = await User.findOne({ userName });
@@ -77,7 +85,14 @@ const createUser = async (req, res) => {
         .json({ message: "Este userName ya está siendo utilizado" });
     }
 
-    const newUser = await User.create({ userName, password, email, firstName, lastName, location});
+    const newUser = await User.create({
+      userName,
+      password,
+      email,
+      firstName,
+      lastName,
+      location,
+    });
     res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -87,29 +102,32 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
-    const { userName, password, email, firstName, lastName, bio, location } = req.body
+    const { userName, password, email, firstName, lastName, bio, location } =
+      req.body;
     const cacheKey = `User-${id}`;
 
-    const user = await User.findByIdAndUpdate(id, { userName, email, firstName, lastName, bio, location }, {
-      new: true,
-    });
+    const user = await User.findByIdAndUpdate(
+      id,
+      { userName, email, firstName, lastName, bio, location },
+      {
+        new: true,
+      }
+    );
 
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    if(req.file) {
+    if (req.file) {
       const imageAvatar = saveAvatarImage(user.userName, req.file);
-      user.avatar = imageAvatar.replace("./", "/")
+      user.avatar = imageAvatar.replace("./", "/");
     }
 
     user.password = password;
-    await user.save()
+    await user.save();
 
     await redisClient.set(cacheKey, JSON.stringify(user), { EX: 1800 });
-    res
-      .status(200)
-      .json({ message: "Usuario actualizado", usuario: user });
+    res.status(200).json({ message: "Usuario actualizado", usuario: user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -126,10 +144,10 @@ const deleteById = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    if(deletedUser.avatar.includes('uploads/avatar')) {
-      deleteImage(deletedUser.avatar)
+    if (deletedUser.avatar && deletedUser.avatar.includes("uploads/avatar")) {
+      deleteImage(deletedUser.avatar);
     }
-    
+
     res
       .status(200)
       .json({ message: "Usuario eliminado", usuario: deletedUser });

@@ -30,7 +30,7 @@ app.use("/posts", postRoute);
 app.use("/postimages", postImageRoute);
 app.use("/comments", commentRoute);
 app.use("/login", loginRoute);
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // acceso a imágenes subidas
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // acceso a imágenes subidas
 
 app.use(express.urlencoded({ extended: true }));
 

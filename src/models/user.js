@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const bcrypt = require("bcrypt")
+const bcrypt = require("bcrypt");
 SALT_WORK_FACTOR = 10;
 
 const userSchema = new mongoose.Schema(
@@ -16,15 +16,15 @@ const userSchema = new mongoose.Schema(
       required: [true, "La contraseña es requerida"],
       validate: [
         {
-          validator: (p) => validator.isLength(p, {min:8, max:15}),
-          message: 'La contraseña debería tener entre 8 y 15 caracteres'
+          validator: (p) => validator.isLength(p, { min: 8, max: 15 }),
+          message: "La contraseña debería tener entre 8 y 15 caracteres",
         },
         {
           validator: (p) => validator.isAlphanumeric(p),
-          message: 'La contraseña debe contener caracteres alfanuméricos'
-        } 
-      ]
-    }, 
+          message: "La contraseña debe contener caracteres alfanuméricos",
+        },
+      ],
+    },
 
     email: {
       type: String,
@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema(
     },
     reputation: { type: Number, default: 0 },
     //aca va la url de la imagen, o si no ponemos la inicial del nickname o del nombre completo
-    avatar: { type: String },
+    avatar: { type: String, default: "" },
 
     //para poder armar el perfil del usuario
     history: [
@@ -81,19 +81,19 @@ const userSchema = new mongoose.Schema(
 );
 
 // Para encriptar la contraseña - pre es un middleware de mongoose
-userSchema.pre('save', function(next) {
+userSchema.pre("save", function (next) {
   var user = this;
 
   // Solo crea el hash para la contraseña si es nueva o fue modificada
-  if(!user.isModified('password')) return next();
+  if (!user.isModified("password")) return next();
 
   // Generamos la sal
-  bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt){
-    if(err) return next(err);
+  bcrypt.genSalt(SALT_WORK_FACTOR, function (err, salt) {
+    if (err) return next(err);
 
     // Se crea el hash para la contraseña usando la sal
-    bcrypt.hash(user.password, salt, function(err, hash){
-      if(err) return next(err);
+    bcrypt.hash(user.password, salt, function (err, hash) {
+      if (err) return next(err);
 
       // Se sobreescribe la contraseña con la hasheada
       user.password = hash;
@@ -103,9 +103,9 @@ userSchema.pre('save', function(next) {
 });
 
 // Metodo del modelo para poder comparar la contraseña
-userSchema.methods.comparePassword = function(candidatePassword, cb) {
-  bcrypt.compare(candidatePassword, this.password, function(err, isMatch){
-    if(err) return cb(err);
+userSchema.methods.comparePassword = function (candidatePassword, cb) {
+  bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
+    if (err) return cb(err);
     cb(null, isMatch);
   });
 };
