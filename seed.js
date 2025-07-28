@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const User = require("./src/models/user.js");
-const Post = require("./src/models/post.js");
-const PostImage = require("./src/models/postImage.js");
-const Comment = require("./src/models/comment.js");
+const User = require("./src/models/User");
+const Post = require("./src/models/Post");
+const PostImage = require("./src/models/PostImage");
+const Comment = require("./src/models/Comment");
 
 async function seedDatabase() {
   try {
@@ -15,6 +15,7 @@ async function seedDatabase() {
         _id: "6877e4efb85e8f79c12f431d",
         userName: "valen_12",
         email: "valeng12@gmail.com",
+        password: "hoy123456",
         firstName: "Valentina",
         lastName: "Perez",
         bio: "Me encanta la moda sostenible y el intercambio de ropa.",
@@ -27,6 +28,7 @@ async function seedDatabase() {
         _id: "6877e4f5416c8df2b828b5e5",
         userName: "lunaaU",
         email: "lunaau23@gmail.com",
+        password: "hoy123456",
         firstName: "Luna",
         lastName: "Ulloa",
         bio: "Apasionada por las prendas vintage y el reciclaje.",
@@ -39,6 +41,7 @@ async function seedDatabase() {
         _id: "6877e4fc4ec2f21d067a4d06",
         userName: "juanJT",
         email: "juanjt.34@gmail.com",
+        password: "hoy123456",
         firstName: "Juan",
         lastName: "Torres",
         bio: "Fanático del estilo urbano y los accesorios únicos.",
@@ -51,6 +54,7 @@ async function seedDatabase() {
         _id: "68782074b4e57faaceb3c823",
         userName: "miraYapu",
         email: "mirayapura@gmail.com",
+        password: "hoy123456",
         firstName: "Miranda",
         lastName: "Yapur",
         bio: "Disfruto de la moda ecológica y compartir looks.",
@@ -63,6 +67,7 @@ async function seedDatabase() {
         _id: "68782b1ebe059749e619ef2b",
         userName: "robyR3",
         email: "roobyr.3@gmail.com",
+        password: "hoy123456",
         firstName: "Roberto",
         lastName: "Rodriguez",
         bio: "Buscando siempre nuevas formas de intercambiar ropa.",
