@@ -7,12 +7,12 @@ const saveImage = (file) => {
   return newPath;
 }
 
-const saveAvatarImage = (userName, file) => {
-  const formatName = file.originalname.replace(/ /g, "_");
-  const newPath = `./uploads/avatar/${userName}-${formatName}`;
-  fs.renameSync(file.path, newPath);
-  return newPath;
-} 
+// const saveAvatarImage = (userName, file) => {
+//   const formatName = file.originalname.replace(/ /g, "_");
+//   const newPath = `./uploads/avatar/${userName}-${formatName}`;
+//   fs.renameSync(file.path, newPath);
+//   return newPath;
+// } 
 
 const deleteImage= (path) => {
   fs.unlink(path,  (err) => {
@@ -37,4 +37,4 @@ function fileFilter(req, file, cb) {
     cb(new Error("Only image are allowed"), false);
 };
 
-module.exports = { saveImage, saveAvatarImage, deleteImage, fileFilter }
+module.exports = { saveImage, deleteImage, fileFilter }

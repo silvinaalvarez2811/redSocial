@@ -9,7 +9,7 @@ const postImageSchema = new mongoose.Schema(
       required: [true, "postId es requerido"],
     },
     imageUrl: {
-      type: [String],
+      type: String,
       required: [true, "imageUrl es requerido"],
     },
   },

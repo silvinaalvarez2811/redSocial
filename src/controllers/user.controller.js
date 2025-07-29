@@ -2,7 +2,7 @@ const User = require("../models/user");
 const Post = require("../models/post");
 const Comment = require("../models/comment");
 const redisClient = require("../redis");
-const { saveAvatarImage, deleteImage } = require("../aditionalFunctions/image");
+const { deleteImage } = require("../aditionalFunctions/image");
 const bcrypt = require("bcrypt")
 
 const getUsers = async (_, res) => {
@@ -88,46 +88,55 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
-    const { userName, email, firstName, lastName, bio, location } = req.body
-    const cacheKey = `User-${id}`;
+    const updates = {};
 
-    const user = await User.findByIdAndUpdate(id, { userName, email, firstName, lastName, bio, location });
+    const campos = ["userName", "email", "firstName", "lastName", "bio", "location"];
 
-    if(req.body.password) {  // Para hacer si te pasan la password en el req.body
+    campos.forEach((campo) => {
+      if (req.body[campo]) {
+        updates[campo] = req.body[campo];
+      }
+    });
+
+    if (req.body.password && req.body.password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
+      updates.password = await bcrypt.hash(req.body.password, salt);
     }
 
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    if (req.file) {
+      updates.avatar = `/uploads/avatar/${req.file.filename}`;
     }
 
-    await user.save()
-    await redisClient.set(cacheKey, JSON.stringify(user), { EX: 1800 });
-    res
-      .status(200)
-      .json({ message: "Usuario actualizado", usuario: user });
+    const updatedUser = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: false,
+    });
+
+    if (!updatedUser) return res.status(404).json({ error: "Usuario no encontrado" });
+
+    res.status(200).json({ message: "Usuario actualizado", usuario: updatedUser });
   } catch (error) {
+    console.error("ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-const updateAvatarUser = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const user = await User.findById(id)
+// const updateAvatarUser = async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     const user = await User.findById(id)
 
-    const imageAvatar = saveAvatarImage(user.userName, req.file);
-    user.avatar = imageAvatar.replace("./", "/")
-    await user.save()
+//     const imageAvatar = saveAvatarImage(user.userName, req.file);
+//     user.avatar = imageAvatar.replace("./", "/")
+//     await user.save()
 
-    res
-      .status(200)
-      .json({ message: "Avatar actualizado", usuario: user });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+//     res
+//       .status(200)
+//       .json({ message: "Avatar actualizado", usuario: user });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// }
 
 const deleteById = async (req, res) => {
   try {
@@ -140,8 +149,8 @@ const deleteById = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    if(deletedUser.avatar.includes('uploads/avatar')) {
-      deleteImage(deletedUser.avatar)
+    if (deletedUser.avatar && deletedUser.avatar.includes("uploads/avatar")) {
+      deleteImage(deletedUser.avatar);
     }
     
     res
@@ -156,7 +165,7 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
-  updateAvatarUser,
+  // updateAvatarUser,
   createUser,
   updateUser,
   deleteById,
