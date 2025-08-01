@@ -16,6 +16,7 @@ const getUsers = async (_, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const getHistoryById = async (req, res) => {
   try {
     const id = await req.params.id;
@@ -63,6 +64,20 @@ const getUserById = async (req, res) => {
   }
 };
 
+const getUserByIdFull = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findById(id).lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario inexistente" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const createUser = async (req, res) => {
   try {
     const { userName, password, email, firstName, lastName, location } = req.body;
@@ -88,6 +103,7 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
+    const cacheKey = `User-${id}`;
     const updates = {};
 
     const campos = ["userName", "email", "firstName", "lastName", "bio", "location"];
@@ -113,30 +129,13 @@ const updateUser = async (req, res) => {
     });
 
     if (!updatedUser) return res.status(404).json({ error: "Usuario no encontrado" });
-
+    await redisClient.set(cacheKey, JSON.stringify(updatedUser), { EX: 1800 });
     res.status(200).json({ message: "Usuario actualizado", usuario: updatedUser });
   } catch (error) {
     console.error("ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
-// const updateAvatarUser = async (req, res) => {
-//   try {
-//     const id = req.params.id;
-//     const user = await User.findById(id)
-
-//     const imageAvatar = saveAvatarImage(user.userName, req.file);
-//     user.avatar = imageAvatar.replace("./", "/")
-//     await user.save()
-
-//     res
-//       .status(200)
-//       .json({ message: "Avatar actualizado", usuario: user });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// }
 
 const deleteById = async (req, res) => {
   try {
@@ -165,7 +164,7 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
-  // updateAvatarUser,
+  getUserByIdFull,
   createUser,
   updateUser,
   deleteById,

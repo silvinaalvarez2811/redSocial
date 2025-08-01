@@ -26,6 +26,12 @@ router.get(
   userController.getUserById
 );
 
+router.get(
+  "/:id/full",
+  validatorObjectId.validarObjectId,
+  userController.getUserByIdFull
+);
+
 router.get("/:id/history", userController.getHistoryById);
 
 router.post("/", 
@@ -37,12 +43,6 @@ router.patch("/:id",
     upload.single('image'),
     userController.updateUser
 );
-
-// router.put("/avatar/:id", 
-//     upload.single('image'),
-//     validatorObjectId.validarObjectId, 
-//     userController.updateAvatarUser
-// );
 
 router.delete("/:id", 
     validatorObjectId.validarObjectId, 
