@@ -73,6 +73,14 @@ const userSchema = new mongoose.Schema(
         isValued: { type: Boolean, default: false },
       },
     ],
+    // Notificaciones de intercambios solicitados
+    notifications: [
+      {
+        postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
+        from: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        date: { type: Date, default: Date.now }
+      }   
+    ]
   },
   {
     collection: "users",

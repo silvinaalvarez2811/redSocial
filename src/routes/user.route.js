@@ -27,9 +27,16 @@ router.get(
 );
 
 router.get("/:id/history", userController.getHistoryById);
+router.get("/:userId/notifications", userController.getNotificationsById);
+router.get("/alertof/:postId/:userId", userController.getAlertOfPost);
 
 router.post("/", 
     userController.createUser
+);
+
+router.post("/notify/:id", 
+    validatorObjectId.validarObjectId,
+    userController.createNotification
 );
 
 router.put("/:id", 

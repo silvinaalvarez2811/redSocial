@@ -3,6 +3,7 @@ const Post = require("../models/post");
 const Comment = require("../models/comment");
 const redisClient = require("../redis");
 const { saveAvatarImage, deleteImage } = require("../aditionalFunctions/image");
+const socketNotification = require("../aditionalFunctions/notification")
 
 const getUsers = async (_, res) => {
   try {
@@ -15,6 +16,7 @@ const getUsers = async (_, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const getHistoryById = async (req, res) => {
   try {
     const id = await req.params.id;
@@ -26,6 +28,48 @@ const getHistoryById = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
     res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Obtiene todas las notificaciones de un usuario
+const getNotificationsById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("userName")
+      .populate("notifications.postId", "description")
+      .populate("notifications.from", "userName avatar")
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Obtener el post con sólo el comentario del usuario que lo solicita
+// Usado para el post de la notificación
+const getAlertOfPost = async (req, res) => {
+  try {
+    const { postId, userId } = req.params;
+    const post = await Post.findById(postId)
+      // .select("-__v")
+      .populate("images", "imageUrl")
+      .populate("requestedBy", "userName")
+      .populate({
+        path: "comments",
+        match: { userId: { $eq: userId } },
+        select: "text userId createdAt",
+        populate: { path: "userId", select: "userName" },
+      });
+
+    if (!post) {
+      return res.status(404).json({ message: "Alerta no encontrada" });
+    }
+    res.status(200).json(post);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -99,6 +143,41 @@ const createUser = async (req, res) => {
   }
 };
 
+const createNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { postId, from, date } = req.body;
+
+    if ( !postId || !from || !date ) {
+      return res.status(400).json({ message: "Faltan datos requeridos" });
+    }
+
+    socketNotification({ id, postId, from });
+
+    const user = await User.findByIdAndUpdate(id, {
+        $push: {
+          notifications: { postId,from, date }
+        }
+      }
+    );
+
+    // Actualizo el campo "requestedBy" del post para que muestre que fue solicitado por un usuario
+    // Falta cambiar el campo de status del post a "engaged"
+    await Post.updateOne({ _id: postId }, {$set: {requestedBy: from }});
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Usuario inexistente" });
+    }
+
+    
+    res.status(201).json(user.notifications);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
@@ -160,7 +239,11 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
+  getHistoryById,
+  getNotificationsById,
+  getAlertOfPost,
   createUser,
+  createNotification,
   updateUser,
   deleteById,
   getHistoryById,
