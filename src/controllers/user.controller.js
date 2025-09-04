@@ -220,6 +220,7 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
+  getUserByIdFull,
   getHistoryById,
   getNotificationsById,
   getAlertOfPost,

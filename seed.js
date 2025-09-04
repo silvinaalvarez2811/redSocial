@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const User = require("./src/models/User");
-const Post = require("./src/models/Post");
-const PostImage = require("./src/models/PostImage");
-const Comment = require("./src/models/Comment");
+const User = require("./src/models/user.js");
+const Post = require("./src/models/post.js");
+const PostImage = require("./src/models/postImage.js");
+const Comment = require("./src/models/comment.js");
 
 async function seedDatabase() {
   try {
