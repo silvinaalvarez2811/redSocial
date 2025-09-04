@@ -58,6 +58,22 @@ const getCommentById = async (req, res) => {
   }
 };
 
+// Obtener sólo el comentario de la persona que hizo la solicitud de intercambio
+const getCommentOfPostByUsername = async (req, res) => {
+  try {
+    const { postId, userId } = req.params;
+
+    const comment = await Comment.findOne({ postId, userId });
+    if (!comment) {
+      return res.status(404).json({ error: "Comentario no encontrado" });
+    }
+
+    res.status(200).json(comment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Obtener comentarios de un post (solo los que no superen la fecha limite)
 const getCommentsByPost = async (req, res) => {
   try {
@@ -68,7 +84,6 @@ const getCommentsByPost = async (req, res) => {
 
     const comments = await Comment.find({
       postId,
-
       createdAt: { $gte: fechaLimite },
     }).sort({
       createdAt: -1,
@@ -121,6 +136,7 @@ module.exports = {
   getComments,
   getCommentById,
   getCommentsByPost,
+  getCommentOfPostByUsername,
   updateComment,
   deleteComment,
 };

@@ -5,6 +5,7 @@ const User = require("../models/user");
 const { saveImage } = require("../aditionalFunctions/image");
 const { obtenerFechaLimite } = require("../aditionalFunctions/comment");
 const redisClient = require("../redis");
+const socketNotification = require("../aditionalFunctions/notification")
 
 const getPosts = async (req, res) => {
   try {
@@ -252,9 +253,11 @@ const updatePostImagesById = async (req, res) => {
       .json({ message: "Ocurrió un error en el servidor", error: e.message });
   }
 };
-const requestExchange = async (req, res) => {
+
+const requestExchangeForUser = async (req, res) => {
   try {
-    const { postId, requesterId } = req.body;
+    const { id } = req.params;
+    const { postId, from, date } = req.body;
     const post = await Post.findById(postId);
 
     if (!post) {
@@ -265,8 +268,17 @@ const requestExchange = async (req, res) => {
         .status(400)
         .json({ message: "Publicación no disponible para el intercambio" });
     }
+
+    socketNotification({ id, postId, from });  // Le envío al socket la notificación
+    
+    await User.findByIdAndUpdate(id, {
+      $push: {
+        notifications: { postId,from, date }
+      }
+    });
+
+    post.requestedBy = from;
     post.status = "engaged";
-    post.requestedBy = requesterId;
     await post.save();
     res.status(200).json(post);
   } catch (error) {
@@ -277,28 +289,26 @@ const requestExchange = async (req, res) => {
 
 const confirmExchange = async (req, res) => {
   try {
-    const { postId, exchangedWithId, userId } = req.body;
+    const { postId, exchangedWithId } = req.body;
     const post = await Post.findById(postId);
     const exchangedWithUser = await User.findById(exchangedWithId);
+
     if (!post) {
       return res.status(404).json({ message: "Publicación no encontrada" });
     }
-    if (post.userId.toString() !== userId) {
-      return res.status(403).json({
-        message: "Debe ser el dueño del post para confirmar el intercambio",
-      });
-    }
+
     if (!exchangedWithUser) {
       return res
         .status(404)
         .json({ message: "Usuario que quiere intercambiar no encontrado" });
     }
-    if (post.status !== "engaged") {
-      return res.status(400).json({
-        message:
-          "El intercambio no puede confirmarse. La publicación debe estar en estado 'engaged'",
-      });
-    }
+
+    // if (post.status !== "engaged") {
+    //   return res.status(400).json({
+    //     message:
+    //       "El intercambio no puede confirmarse. La publicación debe estar en estado 'engaged'",
+    //   });
+    // }
     //actualizar el status
     post.status = "completed";
     post.exchangedWith = exchangedWithId;
@@ -344,7 +354,7 @@ module.exports = {
   deleteById,
   deletePostImage,
   updatePostImagesById,
-  requestExchange,
+  requestExchangeForUser,
   confirmExchange,
   getAllPostsWithImagesComments,
 };

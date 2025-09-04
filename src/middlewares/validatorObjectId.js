@@ -24,6 +24,18 @@ const validarPostId = (req, res, next) => {
   next();
 };
 
+const validarUserId = (req, res, next) => {
+  const { userId } = req.params;
+
+  if (!Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({
+      mensaje: "ID inválido. Debe ser un ObjectId válido de MongoDB.",
+    });
+  }
+
+  next();
+};
+
 const validarFollowId = (req, res, next) => {
   const { follower, followed } = req.params;
 
@@ -78,6 +90,7 @@ const validarRequestExchange = (req, res, next) => {
 module.exports = {
   validarObjectId,
   validarPostId,
+  validarUserId,
   validarFollowId,
   validarPostImageIds,
   validarExchangeBody,

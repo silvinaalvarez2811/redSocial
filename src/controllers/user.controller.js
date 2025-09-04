@@ -5,6 +5,7 @@ const redisClient = require("../redis");
 const { deleteImage } = require("../aditionalFunctions/image");
 const bcrypt = require("bcrypt")
 
+
 const getUsers = async (_, res) => {
   try {
     const users = await User.find().select("-__v").lean();
@@ -28,6 +29,46 @@ const getHistoryById = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
     res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Obtiene todas las notificaciones de un usuario
+const getNotificationsById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("userName notifications.date")
+      .populate("notifications.postId", "description")
+      .populate("notifications.from", "userName avatar")
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Obtener el post con sólo el comentario del usuario que lo solicita
+// Usado para el post de la notificación
+const getAlertOfPost = async (req, res) => {
+  try {
+    const { postId, userId } = req.params;
+    const post = await Post.findById(postId)
+      .populate("images", "imageUrl")
+      .populate("requestedBy", "userName")
+      .populate({
+        path: "comments",
+        match: { userId: { $eq: userId } },
+        select: "text userId createdAt",
+        populate: { path: "userId", select: "userName" },
+      });
+
+    if (!post) {
+      return res.status(404).json({ message: "Alerta no encontrada" });
+    }
+    res.status(200).json(post);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -179,7 +220,9 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
-  getUserByIdFull,
+  getHistoryById,
+  getNotificationsById,
+  getAlertOfPost,
   createUser,
   updateUser,
   deleteById,

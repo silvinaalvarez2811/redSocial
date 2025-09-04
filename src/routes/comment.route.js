@@ -20,6 +20,12 @@ router.get("/:id",
     commentController.getCommentById
 );
 
+router.get("/:postId/:userId", 
+    validatorObjectId.validarPostId,
+    validatorObjectId.validarUserId,
+    commentController.getCommentOfPostByUsername
+);
+
 router.post("/", 
     commentController.createComment
 );
