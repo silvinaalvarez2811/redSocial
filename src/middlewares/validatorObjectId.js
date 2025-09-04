@@ -77,12 +77,12 @@ const validarExchangeBody = (req, res, next) => {
 };
 
 const validarRequestExchange = (req, res, next) => {
-  const { postId, requesterId } = req.body;
-  if (!postId || !requesterId) {
-    return res.status(400).json({ message: "Faltan postId o requesterId" });
+  const { postId, from } = req.body;
+  if (!postId || !from) {
+    return res.status(400).json({ message: "Faltan postId o from" });
   }
-  if (!Types.ObjectId.isValid(postId) || !Types.ObjectId.isValid(requesterId)) {
-    return res.status(400).json({ message: "postId o requesterId inválidos" });
+  if (!Types.ObjectId.isValid(postId) || !Types.ObjectId.isValid(from)) {
+    return res.status(400).json({ message: "postId o from inválidos" });
   }
   next();
 };
