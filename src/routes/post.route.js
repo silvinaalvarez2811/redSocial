@@ -65,9 +65,9 @@ router.delete(
   postController.deleteById
 );
 router.post(
-  "/requestExchange",
+  "/requestExchangeFor/:id",
   validatorObjectId.validarRequestExchange,
-  postController.requestExchange
+  postController.requestExchangeForUser
 );
 
 router.post(

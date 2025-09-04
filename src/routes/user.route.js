@@ -34,11 +34,6 @@ router.post("/",
     userController.createUser
 );
 
-router.post("/notify/:id", 
-    validatorObjectId.validarObjectId,
-    userController.createNotification
-);
-
 router.put("/:id", 
     upload.single('image'),
     validatorObjectId.validarObjectId, 

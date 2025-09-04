@@ -3,7 +3,7 @@ const Post = require("../models/post");
 const Comment = require("../models/comment");
 const redisClient = require("../redis");
 const { saveAvatarImage, deleteImage } = require("../aditionalFunctions/image");
-const socketNotification = require("../aditionalFunctions/notification")
+
 
 const getUsers = async (_, res) => {
   try {
@@ -37,10 +37,9 @@ const getHistoryById = async (req, res) => {
 const getNotificationsById = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).select("userName")
+    const user = await User.findById(userId).select("userName notifications.date")
       .populate("notifications.postId", "description")
       .populate("notifications.from", "userName avatar")
-
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
@@ -56,7 +55,6 @@ const getAlertOfPost = async (req, res) => {
   try {
     const { postId, userId } = req.params;
     const post = await Post.findById(postId)
-      // .select("-__v")
       .populate("images", "imageUrl")
       .populate("requestedBy", "userName")
       .populate({
@@ -143,41 +141,6 @@ const createUser = async (req, res) => {
   }
 };
 
-const createNotification = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { postId, from, date } = req.body;
-
-    if ( !postId || !from || !date ) {
-      return res.status(400).json({ message: "Faltan datos requeridos" });
-    }
-
-    socketNotification({ id, postId, from });
-
-    const user = await User.findByIdAndUpdate(id, {
-        $push: {
-          notifications: { postId,from, date }
-        }
-      }
-    );
-
-    // Actualizo el campo "requestedBy" del post para que muestre que fue solicitado por un usuario
-    // Falta cambiar el campo de status del post a "engaged"
-    await Post.updateOne({ _id: postId }, {$set: {requestedBy: from }});
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: "Usuario inexistente" });
-    }
-
-    
-    res.status(201).json(user.notifications);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 const updateUser = async (req, res) => {
   try {
     const id = req.params.id;
@@ -243,7 +206,6 @@ module.exports = {
   getNotificationsById,
   getAlertOfPost,
   createUser,
-  createNotification,
   updateUser,
   deleteById,
   getHistoryById,
