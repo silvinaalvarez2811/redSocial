@@ -36,7 +36,7 @@ const getHistoryById = async (req, res) => {
 const getUserByUsername = async (req, res) => {
   try {
     const { username } = req.query;
-    const user = await User.findOne({userName: username})
+    const user = await User.findOne({ userName: username });
 
     if (!user) {
       return res.status(404).json({ message: "Usuario inexistente" });
@@ -80,10 +80,18 @@ const getUserByIdFull = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { userName, password, email, firstName, lastName, location } = req.body;
+    const { userName, password, email, firstName, lastName, location } =
+      req.body;
 
-    if(!userName || !password || !email || !firstName || !lastName || !location) {
-      return res.status(400).json({message: "Faltan datos requeridos"})
+    if (
+      !userName ||
+      !password ||
+      !email ||
+      !firstName ||
+      !lastName ||
+      !location
+    ) {
+      return res.status(400).json({ message: "Faltan datos requeridos" });
     }
 
     const existingUser = await User.findOne({ userName });
@@ -93,7 +101,14 @@ const createUser = async (req, res) => {
         .json({ message: "Este userName ya está siendo utilizado" });
     }
 
-    const newUser = await User.create({ userName, password, email, firstName, lastName, location});
+    const newUser = await User.create({
+      userName,
+      password,
+      email,
+      firstName,
+      lastName,
+      location,
+    });
     res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -151,7 +166,7 @@ const deleteById = async (req, res) => {
     if (deletedUser.avatar && deletedUser.avatar.includes("uploads/avatar")) {
       deleteImage(deletedUser.avatar);
     }
-    
+
     res
       .status(200)
       .json({ message: "Usuario eliminado", usuario: deletedUser });

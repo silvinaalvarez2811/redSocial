@@ -16,15 +16,15 @@ const userSchema = new mongoose.Schema(
       },
       validate: [
         {
-          validator: (p) => validator.isLength(p, {min:8, max:15}),
-          message: 'La contraseña debería tener entre 8 y 15 caracteres'
+          validator: (p) => validator.isLength(p, { min: 8, max: 15 }),
+          message: "La contraseña debería tener entre 8 y 15 caracteres",
         },
         {
           validator: (p) => validator.isAlphanumeric(p),
-          message: 'La contraseña debe contener caracteres alfanuméricos'
-        } 
-      ]
-    }, 
+          message: "La contraseña debe contener caracteres alfanuméricos",
+        },
+      ],
+    },
 
     email: {
       type: String,

@@ -91,6 +91,9 @@ const getPostwithImagesCommentsById = async (req, res) => {
 };
 
 const createPost = async (req, res) => {
+  console.log("req.body", req.body);
+  console.log("req.files:", req.files);
+
   try {
     const { description, userId, lookingFor } = req.body;
 
@@ -101,33 +104,23 @@ const createPost = async (req, res) => {
     // Crear el post inicialmente sin imágenes
     const newPost = await Post.create({ description, userId, lookingFor });
 
-    // Si vienen archivos (imágenes) en req.files, guardarlos y crear registros
     if (req.files && req.files.length > 0) {
-      // Guardar las imágenes en la carpeta uploads
-      req.files.forEach((file) => saveImage(file));
-
-      // Crear documentos PostImage referenciando al post
       const imagesData = req.files.map((file) => ({
         postId: newPost._id,
-        imageUrl: file.destination + file.originalname,
+        imageUrl: `/uploads/${file.filename}`, // importante que sea relativo al server
       }));
 
       const createdImages = await PostImage.create(imagesData);
 
-      // Guardar solo los IDs de las imágenes en el post
       await Post.updateOne(
         { _id: newPost._id },
         { images: createdImages.map((img) => img._id) }
       );
     }
 
-    // Buscar el post creado con populate para devolver datos completos
     const postFinal = await Post.findById(newPost._id)
       .select("-__v")
-      .populate({
-        path: "images",
-        select: "-__v",
-      })
+      .populate("images", "imageUrl")
       .populate("userId", "userName")
       .lean();
 
@@ -165,7 +158,7 @@ const updatePost = async (req, res) => {
       await PostImage.deleteMany({ postId: id });
       //crea una nueva collecion con las imagenes nuevas
       const postImages = req.files.map((file) => ({
-        imageUrl: file.destination + file.originalname,
+        imageUrl: `/uploads/${file.filename}`,
         postId: id,
       }));
       await PostImage.create(postImages);
@@ -242,7 +235,7 @@ const updatePostImagesById = async (req, res) => {
 
     req.files.map((file) => saveImage(file));
     const imagesRecords = req.files.map((file) => ({
-      imageUrl: file.destination + file.originalname,
+      imageUrl: `/uploads/${file.filename}`,
       postId: id,
     }));
     await PostImage.deleteMany({ postId: id });

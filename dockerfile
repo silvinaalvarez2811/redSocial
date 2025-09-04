@@ -8,4 +8,4 @@ RUN npm install -omit=dev
 
 COPY src .
 
-CMD [ "node", "main.js"]
+CMD [ "node", "src/main.js"]

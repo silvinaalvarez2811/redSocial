@@ -18,8 +18,8 @@ const {
   userRoute,
   postRoute,
   postImageRoute,
-  commentRoute, 
-  loginRoute
+  commentRoute,
+  loginRoute,
 } = require("./routes");
 
 conectarDB();
@@ -33,7 +33,6 @@ app.use("/login", loginRoute);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // acceso a imágenes subidas
 
 app.use(express.urlencoded({ extended: true }));
-
 
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDoc));
 
